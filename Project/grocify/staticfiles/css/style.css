@@ -1,0 +1,120 @@
+/* style.css (Unified and Refined) */
+
+:root {
+  --sidebar-bg: #2c3e50;
+  --header-bg: #34495e;
+  --page-bg: #ecf0f1;
+  --card-bg: #ffffff;
+  --accent: #1abc9c;
+  --text: #2c3e50;
+  --light: #f7f9fa;
+  --gray: #95a5a6;
+  --danger: #e74c3c;
+  --rounded: 8px;
+}
+
+/* Typography */
+body {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  background-color: var(--page-bg);
+  color: var(--text);
+}
+
+h1, h2, h3, h4, h5, h6,
+.btn, .form-control, .receipt-id {
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 70px;
+  background-color: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0;
+  z-index: 1000;
+}
+
+.sidebar a {
+  display: block;
+  color: #bdc3c7;
+  font-size: 1.5rem;
+  text-decoration: none;
+  margin: 1.5rem 0;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+  color: var(--accent);
+}
+
+/* Header */
+.header-bar {
+  height: 60px;
+  background-color: var(--header-bg);
+  color: #ecf0f1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  margin-left: 70px;
+  font-size: 1.25rem;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Main Content */
+.main-content {
+  margin-left: 70px;
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1.25rem;
+  }
+}
+
+/* Cards and Grids */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--rounded);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 1rem;
+  border: none;
+}
+
+.card h5 {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+}
+
+/* Buttons and UI */
+.btn-accent {
+  background-color: var(--accent);
+  color: white;
+}
+.btn-accent:hover {
+  background-color: #16a085;
+}
+
+/* Tables */
+.table th, .table td {
+  vertical-align: middle;
+}
+
+/* Utilities */
+.text-muted-small {
+  font-size: 0.85rem;
+  color: var(--gray);
+}

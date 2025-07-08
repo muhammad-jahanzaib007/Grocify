@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Stock Ledger{% endblock %}
+{% block header %}Stock Movement Ledger{% endblock %}
+
+<form method="get" class="filters">
+  <label>Product:
+    <input type="text" name="product" placeholder="Name" value="{{ request.GET.product }}">
+  </label>
+  <label>Location:
+    <select name="location">
+      <option value="">All</option>
+      {% for loc in locations %}
+      <option value="{{ loc.id }}"
+        {% if request.GET.location == loc.id|stringformat:"s" %}selected{% endif %}>
+        {{ loc.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Type:
+    <select name="entry_type">
+      <option value="">All</option>
+      {% for code, label in entry_types %}
+      <option value="{{ code }}"
+        {% if request.GET.entry_type == code %}selected{% endif %}>
+        {{ label }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Filter</button>
+</form>
+
+<table class="ledger-table">
+  <thead>
+    <tr>
+      <th>Timestamp</th>
+      <th>Product</th>
+      <th>Location</th>
+      <th>Before</th>
+      <th>Change</th>
+      <th>After</th>
+      <th>Type</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in ledger_entries %}
+    <tr>
+      <td>{{ entry.timestamp }}</td>
+      <td>{{ entry.product.name }}</td>
+      <td>{{ entry.location.name }}</td>
+      <td>{{ entry.quantity_before }}</td>
+      <td>{{ entry.quantity_changed }}</td>
+      <td>{{ entry.quantity_after }}</td>
+      <td>{{ entry.related_entry.get_entry_type_display }}</td>
+      <td>{{ entry.related_entry.note }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8">No ledger entries.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

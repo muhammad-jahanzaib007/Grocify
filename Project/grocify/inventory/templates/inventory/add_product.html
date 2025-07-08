@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <table>
+    {{ form.as_table }}
+  </table>
+  <button type="submit">Save</button>
+  <a href="{% url 'inventory:stock_dashboard' %}">Cancel</a>
+</form>

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Stock Dashboard{% endblock %}
+{% block header %}Stock Dashboard{% endblock %}
+{% block content %}
+
+<!-- FILTERS -->
+<form method="get" class="row gy-2 gx-3 align-items-center mb-4">
+  <div class="col-md-2">
+    <label class="form-label">Location</label>
+    <select name="location" class="form-select" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for loc in locations %}
+      <option value="{{ loc.id }}" {% if selected_location == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-2">
+    <label class="form-label">Category</label>
+    <select name="category" class="form-select" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for cat in categories %}
+      <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-2">
+    <label class="form-label">Company</label>
+    <input type="text" name="company" value="{{ company }}" class="form-control" placeholder="e.g. Nestlé">
+  </div>
+
+  <div class="col-md-3">
+    <label class="form-label">Price Range</label>
+    <div class="input-group">
+      <input type="number" step="0.01" name="price_min" value="{{ price_min }}" class="form-control" placeholder="Min">
+      <span class="input-group-text">–</span>
+      <input type="number" step="0.01" name="price_max" value="{{ price_max }}" class="form-control" placeholder="Max">
+    </div>
+  </div>
+
+  <div class="col-md-2">
+    <label class="form-label">Sort by</label>
+    <select name="sort_by" class="form-select" onchange="this.form.submit()">
+      <option value="product__name" {% if sort_by == 'product__name' %}selected{% endif %}>Name</option>
+      <option value="product__selling_price" {% if sort_by == 'product__selling_price' %}selected{% endif %}>Sale Price</option>
+      <option value="qty_on_hand" {% if sort_by == 'qty_on_hand' %}selected{% endif %}>Stock Level</option>
+    </select>
+  </div>
+
+  <div class="col-md-1 d-grid">
+    <label class="form-label d-none d-md-block">&nbsp;</label>
+    <button type="submit" class="btn btn-success">Filter</button>
+  </div>
+
+  <div class="col-md-1 d-grid">
+    <label class="form-label d-none d-md-block">&nbsp;</label>
+    <a href="{% url 'inventory:stock_dashboard' %}" class="btn btn-outline-secondary">Reset</a>
+  </div>
+</form>
+
+<!-- TABLE -->
+<div class="table-responsive">
+  <table class="table table-bordered align-middle table-striped bg-white">
+    <thead class="table-dark">
+      <tr>
+        <th scope="col">Product</th>
+        {% if not selected_location %}
+        <th scope="col">Location</th>
+        {% endif %}
+        <th scope="col">Qty On Hand</th>
+        <th scope="col">Reorder Lvl</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in inventory_items %}
+      <tr class="{% if item.is_low_stock %}table-warning{% endif %}">
+        <td>{{ item.product.name }}</td>
+        {% if not selected_location %}
+        <td>{{ item.location.name }}</td>
+        {% endif %}
+        <td>{{ item.qty_on_hand }}</td>
+        <td>{{ item.product.reorder_level }}</td>
+        <td>
+          <a href="{% url 'inventory:edit_product' item.product.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+          <a href="{% url 'inventory:adjust_stock' %}" class="btn btn-sm btn-outline-warning">Adjust</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="text-center text-muted">No products found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

@@ -1,0 +1,129 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{% block title %}Grocify{% endblock %}</title>
+
+  <!-- Google Fonts: Nunito -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Bootstrap 5 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    crossorigin="anonymous"
+  />
+
+  <!-- Core CSS -->
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/pos.css' %}" />
+  {% block extra_css %}{% endblock %}
+
+  <style>
+    :root {
+      --sidebar-bg: #2c3e50;
+      --header-bg: #34495e;
+      --page-bg: #ecf0f1;
+      --accent: #1abc9c;
+      --text: #2c3e50;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Nunito', sans-serif;
+      background: var(--page-bg);
+      color: var(--text);
+    }
+
+    h1, h2, h3, h4, h5, h6,
+    .btn, .form-control {
+      font-family: 'Nunito', sans-serif;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 70px;
+      background-color: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      z-index: 1000;
+    }
+
+    .sidebar a {
+      display: block;
+      color: #bdc3c7;
+      font-size: 1.5rem;
+      text-decoration: none;
+      margin: 1.5rem 0;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      color: var(--accent);
+    }
+
+    .header-bar {
+      height: 60px;
+      background-color: var(--header-bg);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      margin-left: 70px;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .main-content {
+      margin-left: 70px;
+      padding: 2rem;
+    }
+
+    .receipt-id {
+      font-size: 0.85rem;
+      color: #bdc3c7;
+      font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        padding: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <a href="#"><img src="{% static 'img/logo-white.png' %}" alt="Logo" width="28" /></a>
+    <a href="{% url 'dashboard:admin_dashboard' %}" title="Dashboard">🏠</a>
+    <a href="{% url 'inventory:stock_dashboard' %}" title="Inventory">📦</a>
+    <a href="{% url 'inventory:add_product' %}" title="Add Product">➕</a>
+    <a href="{% url 'inventory:adjust_stock' %}" title="Adjust Stock">🔧</a>
+    <a href="{% url 'inventory:stock_ledger' %}" title="Ledger">📜</a>
+  </nav>
+
+  <!-- Header -->
+  <header class="header-bar">
+    <div>{% block header %}Welcome to Grocify{% endblock %}</div>
+    <div class="receipt-id" id="receipt-id"></div>
+  </header>
+
+  <!-- Page Body -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="{% static 'js/pos.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,72 @@
+:root {
+  --sidebar-bg: #2c3e50;
+  --header-bg: #34495e;
+  --page-bg:  #ecf0f1;
+  --card-bg:  #ffffff;
+  --accent:   #1abc9c;
+  --text:     #2c3e50;
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--text);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 60px;
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0;
+}
+
+.sidebar a {
+  margin: 1rem 0;
+  color: #bdc3c7;
+  text-decoration: none;
+  font-size: 1.5rem;
+}
+
+.sidebar a.active, .sidebar a:hover {
+  color: var(--accent);
+}
+
+.header-bar {
+  margin-left: 60px;
+  height: 60px;
+  background: var(--header-bg);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  color: #ecf0f1;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.main-content {
+  margin: 1rem;
+  margin-left: 80px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 1rem;
+}
+
+.card h5 {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+}

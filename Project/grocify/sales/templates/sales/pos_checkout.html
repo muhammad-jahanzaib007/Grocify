@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}POS Checkout{% endblock %}
+{% block header %}Point of Sale{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pos.css' %}">
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/pos.js' %}"></script>
+{% endblock %}
+{% block content %}
+<div class="pos-wrapper d-flex flex-wrap gap-4">
+  <!-- Sidebar Product Search -->
+  <div class="pos-left col-12 col-lg-4">
+    <div class="product-search-panel">
+      <h5>🔍 Search Products</h5>
+      <input type="text" id="product-search" class="form-control mb-3" placeholder="Type name or scan barcode..." />
+      <div id="search-results" class="border rounded" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+  </div>
+
+  <!-- Cart & Checkout -->
+  <div class="pos-right col-12 col-lg-8">
+    <form method="post" id="pos-form">
+      {% csrf_token %}
+
+      <!-- Cart Table -->
+      <div class="cart-panel mb-4">
+        <h5 class="mb-3">🛒 Cart</h5>
+        <table class="table table-sm table-bordered cart-table">
+          <thead class="table-light">
+            <tr>
+              <th>Product</th>
+              <th style="width: 80px;">Qty</th>
+              <th>Price</th>
+              <th style="width: 80px;">Disc</th>
+              <th>Total</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cart-body"></tbody>
+          <tfoot>
+            <tr>
+              <th colspan="4" class="text-end">Grand Total:</th>
+              <th id="cart-total">0.00</th>
+              <th></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Sale Summary -->
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label>Customer</label>
+          <select name="customer_id" class="form-select">
+            <option value="">Walk-In Customer</option>
+            {% for customer in customers %}
+              <option value="{{ customer.id }}">{{ customer.name }} ({{ customer.phone }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label>Coupon Code</label>
+          <input type="text" name="coupon_code" class="form-control" />
+        </div>
+
+        <div class="col-md-4">
+          <label>Manual Discount</label>
+          <input type="number" name="manual_discount" class="form-control" step="0.01" min="0" />
+        </div>
+
+        <div class="col-md-4">
+          <label>Payment Method</label>
+          <select name="payment_method" class="form-select">
+            <option value="Cash" selected>Cash</option>
+            <option value="Card">Card</option>
+            <option value="Wallet">Wallet</option>
+            <option value="Credit">Credit</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label>Amount Paid</label>
+          <input type="number" name="amount_paid" class="form-control" step="0.01" required />
+        </div>
+
+        <div class="col-md-4">
+          <label>Receipt ID</label>
+          <input type="text" name="receipt_id" id="receipt-id-input" class="form-control" readonly />
+        </div>
+      </div>
+
+      <!-- Hidden Cart JSON -->
+      <input type="hidden" name="cart" id="cart-input" />
+
+      <div class="mt-4 d-flex justify-content-between">
+        <a href="{% url 'dashboard:admin_dashboard' %}" class="btn btn-outline-secondary">← Cancel</a>
+        <button type="submit" class="btn btn-success">✅ Complete Sale</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pos.js' %}"></script>
+<script>
+  // Generate unique receipt ID (e.g., 20250708-214530)
+  const now = new Date();
+  const receiptId = now.toISOString().slice(0, 19).replace(/[-T:]/g, '');
+  document.getElementById('receipt-id-input').value = receiptId;
+  const receiptSpan = document.getElementById('receipt-id');
+  if (receiptSpan) receiptSpan.textContent = `Receipt ID: ${receiptId}`;
+</script>
+{% endblock %}
