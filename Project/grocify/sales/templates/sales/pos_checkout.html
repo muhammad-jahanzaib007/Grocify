@@ -1,16 +1,20 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}POS Checkout{% endblock %}
 {% block header %}Point of Sale{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pos.css' %}">
 {% endblock %}
+
 {% block extra_js %}
-<script src="{% static 'js/pos.js' %}"></script>
+<script src="{% staticfiles 'js/pos.js' %}"></script>
 {% endblock %}
+
 {% block content %}
 <div class="pos-wrapper d-flex flex-wrap gap-4">
+
   <!-- Sidebar Product Search -->
   <div class="pos-left col-12 col-lg-4">
     <div class="product-search-panel">
@@ -68,8 +72,8 @@
         </div>
 
         <div class="col-md-4">
-          <label>Manual Discount</label>
-          <input type="number" name="manual_discount" class="form-control" step="0.01" min="0" />
+          <label>Discount Amount</label>
+          <input type="number" name="discount_amount" class="form-control" step="0.01" min="0" />
         </div>
 
         <div class="col-md-4">
@@ -86,11 +90,6 @@
           <label>Amount Paid</label>
           <input type="number" name="amount_paid" class="form-control" step="0.01" required />
         </div>
-
-        <div class="col-md-4">
-          <label>Receipt ID</label>
-          <input type="text" name="receipt_id" id="receipt-id-input" class="form-control" readonly />
-        </div>
       </div>
 
       <!-- Hidden Cart JSON -->
@@ -103,16 +102,4 @@
     </form>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/pos.js' %}"></script>
-<script>
-  // Generate unique receipt ID (e.g., 20250708-214530)
-  const now = new Date();
-  const receiptId = now.toISOString().slice(0, 19).replace(/[-T:]/g, '');
-  document.getElementById('receipt-id-input').value = receiptId;
-  const receiptSpan = document.getElementById('receipt-id');
-  if (receiptSpan) receiptSpan.textContent = `Receipt ID: ${receiptId}`;
-</script>
 {% endblock %}

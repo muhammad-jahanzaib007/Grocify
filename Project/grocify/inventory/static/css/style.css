@@ -5,15 +5,19 @@
   --card-bg:  #ffffff;
   --accent:   #1abc9c;
   --text:     #2c3e50;
+  --gray:     #95a5a6;
+  --rounded:  8px;
+  --shadow:   0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 body {
   background: var(--page-bg);
   color: var(--text);
-  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Nunito', sans-serif;
   margin: 0;
 }
 
+/* SIDEBAR */
 .sidebar {
   position: fixed;
   top: 0; left: 0; bottom: 0;
@@ -23,6 +27,7 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 1rem 0;
+  z-index: 1000;
 }
 
 .sidebar a {
@@ -30,12 +35,15 @@ body {
   color: #bdc3c7;
   text-decoration: none;
   font-size: 1.5rem;
+  transition: color 0.3s ease;
 }
 
-.sidebar a.active, .sidebar a:hover {
+.sidebar a.active,
+.sidebar a:hover {
   color: var(--accent);
 }
 
+/* HEADER */
 .header-bar {
   margin-left: 60px;
   height: 60px;
@@ -46,13 +54,16 @@ body {
   color: #ecf0f1;
   font-size: 1.25rem;
   font-weight: 500;
+  box-shadow: var(--shadow);
 }
 
+/* MAIN CONTENT */
 .main-content {
   margin: 1rem;
   margin-left: 80px;
 }
 
+/* CARD GRID */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -61,12 +72,18 @@ body {
 
 .card {
   background: var(--card-bg);
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border-radius: var(--rounded);
+  box-shadow: var(--shadow);
   padding: 1rem;
 }
 
 .card h5 {
   margin: 0 0 0.5rem;
   color: var(--accent);
+}
+
+/* UTILITIES */
+.text-muted-small {
+  font-size: 0.85rem;
+  color: var(--gray);
 }

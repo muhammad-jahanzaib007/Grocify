@@ -2,11 +2,16 @@
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
 
-<form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
-  <table>
-    {{ form.as_table }}
-  </table>
-  <button type="submit">Save</button>
-  <a href="{% url 'inventory:stock_dashboard' %}">Cancel</a>
-</form>
+{% block content %}
+<div class="card p-4 shadow-sm">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <div class="mt-4 d-flex justify-content-between">
+      <a href="{% url 'inventory:stock_dashboard' %}" class="btn btn-outline-secondary">← Cancel</a>
+      <button type="submit" class="btn btn-primary">💾 Update Product</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

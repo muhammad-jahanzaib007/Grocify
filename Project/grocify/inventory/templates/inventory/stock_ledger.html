@@ -2,62 +2,83 @@
 {% block title %}Stock Ledger{% endblock %}
 {% block header %}Stock Movement Ledger{% endblock %}
 
-<form method="get" class="filters">
-  <label>Product:
-    <input type="text" name="product" placeholder="Name" value="{{ request.GET.product }}">
-  </label>
-  <label>Location:
-    <select name="location">
-      <option value="">All</option>
-      {% for loc in locations %}
-      <option value="{{ loc.id }}"
-        {% if request.GET.location == loc.id|stringformat:"s" %}selected{% endif %}>
-        {{ loc.name }}
-      </option>
-      {% endfor %}
-    </select>
-  </label>
-  <label>Type:
-    <select name="entry_type">
-      <option value="">All</option>
-      {% for code, label in entry_types %}
-      <option value="{{ code }}"
-        {% if request.GET.entry_type == code %}selected{% endif %}>
-        {{ label }}
-      </option>
-      {% endfor %}
-    </select>
-  </label>
-  <button type="submit">Filter</button>
-</form>
+{% block content %}
+<div class="card p-4 shadow-sm mb-4">
+  <form method="get" class="row gy-2 gx-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Product</label>
+      <input type="text" name="product" placeholder="e.g. Rice" value="{{ request.GET.product }}" class="form-control">
+    </div>
 
-<table class="ledger-table">
-  <thead>
-    <tr>
-      <th>Timestamp</th>
-      <th>Product</th>
-      <th>Location</th>
-      <th>Before</th>
-      <th>Change</th>
-      <th>After</th>
-      <th>Type</th>
-      <th>Note</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for entry in ledger_entries %}
-    <tr>
-      <td>{{ entry.timestamp }}</td>
-      <td>{{ entry.product.name }}</td>
-      <td>{{ entry.location.name }}</td>
-      <td>{{ entry.quantity_before }}</td>
-      <td>{{ entry.quantity_changed }}</td>
-      <td>{{ entry.quantity_after }}</td>
-      <td>{{ entry.related_entry.get_entry_type_display }}</td>
-      <td>{{ entry.related_entry.note }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="8">No ledger entries.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+    <div class="col-md-3">
+      <label class="form-label">Location</label>
+      <select name="location" class="form-select">
+        <option value="">All</option>
+        {% for loc in locations %}
+        <option value="{{ loc.id }}" {% if request.GET.location == loc.id|stringformat:"s" %}selected{% endif %}>
+          {{ loc.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Type</label>
+      <select name="entry_type" class="form-select">
+        <option value="">All</option>
+        {% for code, label in entry_types %}
+        <option value="{{ code }}" {% if request.GET.entry_type == code %}selected{% endif %}>
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2 d-grid">
+      <label class="form-label d-none d-md-block">&nbsp;</label>
+      <button type="submit" class="btn btn-success">Filter</button>
+    </div>
+  </form>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-bordered table-striped align-middle bg-white">
+    <thead class="table-dark">
+      <tr>
+        <th>Timestamp</th>
+        <th>Product</th>
+        <th>Location</th>
+        <th>Before</th>
+        <th>Change</th>
+        <th>After</th>
+        <th>Type</th>
+        <th>Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in ledger_entries %}
+      <tr>
+        <td>{{ entry.timestamp }}</td>
+        <td>{{ entry.product.name }}</td>
+        <td>{{ entry.location.name }}</td>
+        <td>{{ entry.quantity_before }}</td>
+        <td>
+          {% if entry.quantity_changed > 0 %}
+            <span class="text-success">+{{ entry.quantity_changed }}</span>
+          {% else %}
+            <span class="text-danger">{{ entry.quantity_changed }}</span>
+          {% endif %}
+        </td>
+        <td>{{ entry.quantity_after }}</td>
+        <td>{{ entry.related_entry.get_entry_type_display }}</td>
+        <td>{{ entry.related_entry.note }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8" class="text-center text-muted">No ledger entries found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

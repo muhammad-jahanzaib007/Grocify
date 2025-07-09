@@ -1,5 +1,3 @@
-// pos.js
-
 let cart = [];
 
 // Add product to cart
@@ -21,20 +19,22 @@ function removeFromCart(index) {
 
 // Update quantity
 function updateQuantity(index, value) {
-  cart[index].qty = parseFloat(value);
+  const qty = Math.max(1, parseFloat(value));
+  cart[index].qty = qty;
   renderCart();
 }
 
 // Update discount
 function updateDiscount(index, value) {
-  cart[index].discount = parseFloat(value);
+  const disc = Math.max(0, parseFloat(value));
+  cart[index].discount = disc;
   renderCart();
 }
 
-// Render the cart to table
+// Render cart table
 function renderCart() {
   const tbody = document.getElementById('cart-body');
-  const input = document.getElementById('cart-input');
+  const cartInput = document.getElementById('cart-input');
   const totalEl = document.getElementById('cart-total');
 
   tbody.innerHTML = '';
@@ -53,7 +53,7 @@ function renderCart() {
         </td>
         <td>${item.price.toFixed(2)}</td>
         <td>
-          <input type="number" class="form-control form-control-sm" min="0" value="${disc}" onchange="updateDiscount(${i}, this.value)">
+          <input type="number" class="form-control form-control-sm" min="0" value="${disc.toFixed(2)}" onchange="updateDiscount(${i}, this.value)">
         </td>
         <td>${lineTotal.toFixed(2)}</td>
         <td><button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})">×</button></td>
@@ -62,10 +62,10 @@ function renderCart() {
   });
 
   totalEl.innerText = grand.toFixed(2);
-  input.value = JSON.stringify(cart);
+  cartInput.value = JSON.stringify(cart);
 }
 
-// Live search for products
+// Fetch products matching search term
 function searchProducts(term) {
   fetch(`/api/products/?q=${encodeURIComponent(term)}`)
     .then(res => res.json())
@@ -73,10 +73,21 @@ function searchProducts(term) {
       const list = document.getElementById('search-results');
       list.innerHTML = '';
 
+      if (data.length === 1) {
+        const p = data[0];
+        addToCart({
+          product_id: p.id,
+          name: p.name,
+          price: parseFloat(p.price),
+          discount: 0
+        });
+        return;
+      }
+
       data.forEach(product => {
         const div = document.createElement('div');
         div.className = 'product-result';
-        div.textContent = `${product.name} – ${product.price} PKR`;
+        div.textContent = `${product.name} – ${parseFloat(product.price).toFixed(2)} PKR`;
         div.onclick = () => addToCart({
           product_id: product.id,
           name: product.name,
@@ -85,10 +96,13 @@ function searchProducts(term) {
         });
         list.appendChild(div);
       });
+    })
+    .catch(err => {
+      console.error("🔴 Product search error:", err);
     });
 }
 
-// Attach search input handler
+// DOM Ready Setup
 document.addEventListener('DOMContentLoaded', () => {
   const searchBox = document.getElementById('product-search');
   if (searchBox) {
@@ -96,13 +110,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const term = searchBox.value.trim();
       if (term.length >= 2) searchProducts(term);
     });
+
+    searchBox.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const term = searchBox.value.trim();
+        if (term.length >= 2) searchProducts(term);
+      }
+    });
   }
 
-  // Set Receipt ID if it wasn’t set in template
+  // Generate unique receipt ID
   const now = new Date();
-  const receiptId = now.toISOString().slice(0,19).replace(/[-T:]/g, '');
+  const receiptId = now.toISOString().slice(0, 19).replace(/[-T:]/g, '');
   const receiptSpan = document.getElementById('receipt-id');
   const receiptInput = document.getElementById('receipt-id-input');
+
   if (receiptSpan) receiptSpan.textContent = `Receipt ID: ${receiptId}`;
   if (receiptInput) receiptInput.value = receiptId;
 });

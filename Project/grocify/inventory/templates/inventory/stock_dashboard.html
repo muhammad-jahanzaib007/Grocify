@@ -80,16 +80,22 @@
         {% if not selected_location %}
         <td>{{ item.location.name }}</td>
         {% endif %}
-        <td>{{ item.qty_on_hand }}</td>
+        <td>
+          {{ item.qty_on_hand }}
+          {% if item.is_low_stock %}
+            <span class="badge bg-danger ms-1">Low</span>
+          {% endif %}
+        </td>
         <td>{{ item.product.reorder_level }}</td>
         <td>
           <a href="{% url 'inventory:edit_product' item.product.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
           <a href="{% url 'inventory:adjust_stock' %}" class="btn btn-sm btn-outline-warning">Adjust</a>
+          <a href="{% url 'inventory:stock_ledger' %}?product={{ item.product.id }}" class="btn btn-sm btn-outline-secondary">Ledger</a>
         </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="5" class="text-center text-muted">No products found.</td>
+        <td colspan="{% if selected_location %}5{% else %}6{% endif %}" class="text-center text-muted">No products found.</td>
       </tr>
       {% endfor %}
     </tbody>
