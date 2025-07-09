@@ -36,6 +36,8 @@ function renderCart() {
   const tbody = document.getElementById('cart-body');
   const cartInput = document.getElementById('cart-input');
   const totalEl = document.getElementById('cart-total');
+  const paidInput = document.querySelector('input[name="amount_paid"]');
+  const changeBox = document.getElementById('change-due');
 
   tbody.innerHTML = '';
   let grand = 0;
@@ -63,6 +65,13 @@ function renderCart() {
 
   totalEl.innerText = grand.toFixed(2);
   cartInput.value = JSON.stringify(cart);
+
+  // Calculate change due
+  if (paidInput && changeBox) {
+    const paidAmount = parseFloat(paidInput.value) || 0;
+    const changeDue = paidAmount - grand;
+    changeBox.value = changeDue >= 0 ? changeDue.toFixed(2) : '0.00';
+  }
 }
 
 // Fetch products matching search term
@@ -73,7 +82,6 @@ function searchProducts(term) {
       const list = document.getElementById('search-results');
       list.innerHTML = '';
 
-      // Add only if term is at least 4 characters and result is unique
       if (data.length === 1 && term.length >= 4) {
         const p = data[0];
         const priceValue = Number(p.price);
@@ -85,7 +93,6 @@ function searchProducts(term) {
             discount: 0
           });
 
-          // Clear search input after auto-add
           const searchBox = document.getElementById('product-search');
           searchBox.value = '';
           searchBox.focus();
@@ -93,7 +100,6 @@ function searchProducts(term) {
         return;
       }
 
-      // Show clickable results if multiple matches
       data.forEach(product => {
         const priceValue = Number(product.price);
         if (isNaN(priceValue) || priceValue <= 0) return;
@@ -138,7 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Generate unique receipt ID
+  const paidInput = document.querySelector('input[name="amount_paid"]');
+  if (paidInput) {
+    paidInput.addEventListener('input', () => renderCart());
+  }
+
   const now = new Date();
   const receiptId = now.toISOString().slice(0, 19).replace(/[-T:]/g, '');
   const receiptSpan = document.getElementById('receipt-id');
@@ -147,3 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (receiptSpan) receiptSpan.textContent = `Receipt ID: ${receiptId}`;
   if (receiptInput) receiptInput.value = receiptId;
 });
+const customerSelect = document.getElementById('customer-select');
+const pointsPreview = document.getElementById('customer-points-preview');
+
+if (customerSelect && pointsPreview) {
+  customerSelect.addEventListener('change', () => {
+    const selectedId = customerSelect.value;
+    const points = customerPoints[selectedId] || 0;
+    pointsPreview.textContent = selectedId ? `Points Available: ${points}` : 'Points Available: —';
+  });
+}

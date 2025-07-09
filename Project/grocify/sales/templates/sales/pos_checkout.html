@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block title %}POS Checkout{% endblock %}
 {% block header %}Point of Sale{% endblock %}
 
@@ -9,6 +8,9 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+  const customerPoints = {{ customer_points|safe }};
+</script>
 <script src="{% static 'js/pos.js' %}"></script>
 {% endblock %}
 
@@ -58,12 +60,13 @@
       <div class="row g-3 align-items-end">
         <div class="col-md-4">
           <label>Customer</label>
-          <select name="customer_id" class="form-select">
+          <select name="customer_id" class="form-select" id="customer-select">
             <option value="">Walk-In Customer</option>
             {% for customer in customers %}
               <option value="{{ customer.id }}">{{ customer.name }} ({{ customer.phone }})</option>
             {% endfor %}
           </select>
+          <small id="customer-points-preview" class="text-muted">Points Available: —</small>
         </div>
 
         <div class="col-md-4">
@@ -81,14 +84,26 @@
           <select name="payment_method" class="form-select">
             <option value="Cash" selected>Cash</option>
             <option value="Card">Card</option>
-            <option value="Wallet">Wallet</option>
             <option value="Credit">Credit</option>
+            <option value="Online">Online Payment</option>
+            <option value="Store Points">Store Points</option>
+            
           </select>
         </div>
 
         <div class="col-md-4">
           <label>Amount Paid</label>
           <input type="number" name="amount_paid" class="form-control" step="0.01" required />
+        </div>
+
+        <div class="col-md-4">
+          <label>Change Due</label>
+          <input type="text" id="change-due" class="form-control" readonly />
+        </div>
+
+        <div class="col-md-4">
+          <label>Use Loyalty Points</label>
+          <input type="number" name="points_used" class="form-control" step="1" min="0" />
         </div>
       </div>
 

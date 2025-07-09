@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Receipt – {{ transaction.invoice_number }}{% endblock %}
+{% block extra_css %}
+<style>
+  .receipt-card {
+    max-width: 700px;
+    margin: auto;
+    font-family: "Segoe UI", sans-serif;
+  }
+  .receipt-header {
+    border-bottom: 2px dashed #ccc;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .receipt-table th, .receipt-table td {
+    font-size: 0.95rem;
+    padding: 6px 8px;
+  }
+  .receipt-summary td {
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card receipt-card shadow-lg p-4">
+
+  <!-- Branding & Header -->
+  <div class="receipt-header">
+    <h3 class="mb-1">🧾 Grocify Retail Receipt</h3>
+    <small>Thank you for shopping with us</small>
+  </div>
+
+  <!-- Invoice & Customer -->
+  <div class="mb-3">
+    <div class="d-flex justify-content-between">
+      <div>
+        <strong>Invoice #:</strong> {{ transaction.invoice_number }}<br>
+        <strong>Date:</strong> {{ transaction.date|date:"Y-m-d H:i" }}
+      </div>
+      <div class="text-end">
+        <strong>Cashier:</strong> {{ transaction.cashier.username }}<br>
+        <strong>Location:</strong> {{ transaction.location.name }}
+      </div>
+    </div>
+    <div class="mt-2">
+      <strong>Customer:</strong> {{ transaction.customer.name }} 
+      {% if transaction.customer.phone %} ({{ transaction.customer.phone }}) {% endif %}
+    </div>
+  </div>
+
+  <!-- Product Table -->
+  <div class="mb-3">
+    <table class="table table-bordered table-sm receipt-table">
+      <thead class="table-light">
+        <tr>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Rate</th>
+          <th>Disc</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in transaction.items.all %}
+        <tr>
+          <td>{{ item.product.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.price_at_sale|floatformat:2 }}</td>
+          <td>{{ item.discount_amount|floatformat:2 }}</td>
+          <td>{{ item.quantity|floatformat:2|add:"*item.price_at_sale"|add:"-item.discount_amount"|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Financial Summary -->
+  <table class="table table-sm receipt-summary">
+    <tr>
+      <td class="text-end">Subtotal:</td>
+      <td class="text-end">{{ transaction.total_amount|add:transaction.discount_amount|floatformat:2 }}</td>
+    </tr>
+    {% if transaction.discount_amount > 0 %}
+    <tr>
+      <td class="text-end">Discount:</td>
+      <td class="text-end text-danger">– {{ transaction.discount_amount|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+    {% if transaction.points_redeemed %}
+    <tr>
+    <td class="text-end">Points Redeemed:</td>
+    <td class="text-end text-success">– {{ transaction.points_redeemed }}</td>
+    </tr>
+    {% endif %}
+
+    {% if transaction.coupon_code %}
+    <tr>
+      <td class="text-end">Coupon:</td>
+      <td class="text-end">{{ transaction.coupon_code }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+      <td class="text-end">Total Amount:</td>
+      <td class="text-end fw-bold">{{ transaction.total_amount|floatformat:2 }}</td>
+    </tr>
+    <tr>
+      <td class="text-end">Amount Paid:</td>
+      <td class="text-end">{{ transaction.amount_paid|floatformat:2 }}</td>
+    </tr>
+    <tr>
+      <td class="text-end">Change Due:</td>
+      <td class="text-end">{{ transaction.change_due|floatformat:2 }}</td>
+    </tr>
+  </table>
+
+  <!-- Loyalty -->
+  {% if transaction.points_earned or transaction.points_redeemed %}
+  <div class="mt-3">
+    <strong>Loyalty Summary</strong><br>
+    Points Earned: {{ transaction.points_earned }}<br>
+    {% if transaction.points_redeemed %}Points Redeemed: {{ transaction.points_redeemed }}{% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Footer -->
+  <div class="mt-4 text-center">
+    <p class="text-muted small">Powered by Grocify POS</p>
+    <a href="{% url 'sales:pos_checkout' %}" class="btn btn-sm btn-outline-primary">← Back to POS</a>
+  </div>
+
+</div>
+{% endblock %}

@@ -8,8 +8,9 @@ class SaleTransaction(models.Model):
     PAYMENT_METHODS = [
         ('Cash', 'Cash'),
         ('Card', 'Card'),
-        ('Wallet', 'Wallet'),
         ('Credit', 'On Account'),
+        ('Online', 'Online Payment'),
+        ('Store Points', 'Store Points'),
     ]
 
     invoice_number = models.CharField(max_length=20, unique=True, blank=True)
@@ -18,7 +19,7 @@ class SaleTransaction(models.Model):
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     change_due = models.DecimalField(max_digits=10, decimal_places=2)
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     coupon_code = models.CharField(max_length=50, blank=True)
