@@ -30,8 +30,19 @@ def process_sale(request):
 
         # Extract transaction details
         payment_method = request.POST.get('payment_method')
-        amount_paid = float(request.POST.get('amount_paid', 0))
-        discount_amount = float(request.POST.get('discount_amount', 0))
+        #amount_paid = float(request.POST.get('amount_paid', 0))
+        raw_paid = request.POST.get('amount_paid', '').strip()
+        try:
+            amount_paid = float(raw_paid)
+        except (ValueError, TypeError):
+            amount_paid = 0.0
+
+        raw_discount = request.POST.get('discount_amount', '').strip()
+        try:
+            discount_amount = float(raw_discount)
+        except (ValueError, TypeError):
+            discount_amount = 0.0
+
         coupon_code = request.POST.get('coupon_code', '').strip()
         customer_id = request.POST.get('customer_id')
 
@@ -150,8 +161,18 @@ def pos_checkout(request):
 def product_search_api(request):
     query = request.GET.get('q', '')
     products = Product.objects.filter(
-        Q(name__icontains=query) |
-        Q(sku__icontains=query)
+    Q(name__icontains=query) |
+    Q(sku__icontains=query)
     ).values('id', 'name', 'selling_price')
 
-    return JsonResponse(list(products), safe=False)
+    results = [
+    {
+        'id': p['id'],
+        'name': p['name'],
+        'price': float(p['selling_price']) if p['selling_price'] else 0.0
+    }
+    for p in products
+]
+
+    return JsonResponse(results, safe=False)
+

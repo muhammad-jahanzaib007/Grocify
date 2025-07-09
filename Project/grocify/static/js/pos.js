@@ -73,27 +73,45 @@ function searchProducts(term) {
       const list = document.getElementById('search-results');
       list.innerHTML = '';
 
-      if (data.length === 1) {
+      // Add only if term is at least 4 characters and result is unique
+      if (data.length === 1 && term.length >= 4) {
         const p = data[0];
-        addToCart({
-          product_id: p.id,
-          name: p.name,
-          price: parseFloat(p.price),
-          discount: 0
-        });
+        const priceValue = Number(p.price);
+        if (!isNaN(priceValue) && priceValue > 0) {
+          addToCart({
+            product_id: p.id,
+            name: p.name,
+            price: priceValue,
+            discount: 0
+          });
+
+          // Clear search input after auto-add
+          const searchBox = document.getElementById('product-search');
+          searchBox.value = '';
+          searchBox.focus();
+        }
         return;
       }
 
+      // Show clickable results if multiple matches
       data.forEach(product => {
+        const priceValue = Number(product.price);
+        if (isNaN(priceValue) || priceValue <= 0) return;
+
         const div = document.createElement('div');
         div.className = 'product-result';
-        div.textContent = `${product.name} – ${parseFloat(product.price).toFixed(2)} PKR`;
-        div.onclick = () => addToCart({
-          product_id: product.id,
-          name: product.name,
-          price: parseFloat(product.price),
-          discount: 0
-        });
+        div.textContent = `${product.name} – ${priceValue.toFixed(2)} PKR`;
+        div.onclick = () => {
+          addToCart({
+            product_id: product.id,
+            name: product.name,
+            price: priceValue,
+            discount: 0
+          });
+          document.getElementById('product-search').value = '';
+          document.getElementById('product-search').focus();
+          list.innerHTML = '';
+        };
         list.appendChild(div);
       });
     })

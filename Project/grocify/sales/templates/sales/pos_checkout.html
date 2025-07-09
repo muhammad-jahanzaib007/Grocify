@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% staticfiles 'js/pos.js' %}"></script>
+<script src="{% static 'js/pos.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -26,7 +26,7 @@
 
   <!-- Cart & Checkout -->
   <div class="pos-right col-12 col-lg-8">
-    <form method="post" id="pos-form">
+    <form method="post" action="{% url 'sales:process_sale' %}" id="pos-form">
       {% csrf_token %}
 
       <!-- Cart Table -->
