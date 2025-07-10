@@ -19,9 +19,14 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('inventory/', include('inventory.urls')),
-    path('dashboard/', include('dashboard.urls')),
-    path('pos/', include('sales.urls')),
-    path('api/', include('sales.urls')),
-
+    path('dashboard/', include('dashboard.urls', namespace='dashboard')),
+    path('pos/', include('sales.urls', namespace='sales')),
+    path('inventory/', include('inventory.urls', namespace='inventory')),
+    path('expenses/', include('expenses.urls', namespace='expenses')),
+    path('customers/', include('customers.urls', namespace='customers')),
+    path('loyalty/', include('loyalty.urls', namespace='loyalty')),
+    path('credit/', include('credit.urls', namespace='credit')),
+    path('reports/', include('analytics.urls', namespace='reports')),
+    path('settings/', include('settings.urls', namespace='settings')),
+    path('api/', include('api.urls', namespace='api')),
 ]

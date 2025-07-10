@@ -44,8 +44,7 @@
       </div>
     </div>
     <div class="mt-2">
-      <strong>Customer:</strong> {{ transaction.customer.name }} 
-      {% if transaction.customer.phone %} ({{ transaction.customer.phone }}) {% endif %}
+      <strong>Customer:</strong> {{ transaction.customer.name }}
     </div>
   </div>
 
@@ -62,13 +61,13 @@
         </tr>
       </thead>
       <tbody>
-        {% for item in transaction.items.all %}
+        {% for item in items %}
         <tr>
           <td>{{ item.product.name }}</td>
           <td>{{ item.quantity }}</td>
           <td>{{ item.price_at_sale|floatformat:2 }}</td>
           <td>{{ item.discount_amount|floatformat:2 }}</td>
-          <td>{{ item.quantity|floatformat:2|add:"*item.price_at_sale"|add:"-item.discount_amount"|floatformat:2 }}</td>
+          <td>{{ item.total_amount|floatformat:2 }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -89,11 +88,10 @@
     {% endif %}
     {% if transaction.points_redeemed %}
     <tr>
-    <td class="text-end">Points Redeemed:</td>
-    <td class="text-end text-success">– {{ transaction.points_redeemed }}</td>
+      <td class="text-end">Points Redeemed:</td>
+      <td class="text-end text-success">– {{ transaction.points_redeemed }}</td>
     </tr>
     {% endif %}
-
     {% if transaction.coupon_code %}
     <tr>
       <td class="text-end">Coupon:</td>
@@ -114,14 +112,13 @@
     </tr>
   </table>
 
-  <!-- Loyalty -->
-  {% if transaction.points_earned or transaction.points_redeemed %}
+  <!-- Loyalty Summary (Always Visible) -->
   <div class="mt-3">
     <strong>Loyalty Summary</strong><br>
-    Points Earned: {{ transaction.points_earned }}<br>
-    {% if transaction.points_redeemed %}Points Redeemed: {{ transaction.points_redeemed }}{% endif %}
+    Points Earned: {{ total_points_earned }}<br>
+    Points Redeemed: {{ points_redeemed }}<br>
+    Remaining Points: {{ remaining_points }}
   </div>
-  {% endif %}
 
   <!-- Footer -->
   <div class="mt-4 text-center">

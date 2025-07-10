@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.utils import timezone
 from django.db import transaction
 from django.contrib import messages
 from django.core.exceptions import ValidationError
@@ -22,8 +21,7 @@ def safe_float(value, default=0.0):
 def process_sale(request):
     if request.method == 'POST':
         try:
-            cart_data = request.POST.get('cart')
-            cart = json.loads(cart_data) if cart_data else []
+            cart = json.loads(request.POST.get('cart') or '[]')
         except json.JSONDecodeError:
             messages.error(request, "Invalid cart data.")
             return redirect('sales:pos_checkout')
@@ -60,15 +58,12 @@ def process_sale(request):
             except Coupon.DoesNotExist:
                 messages.warning(request, f"⚠️ Coupon '{coupon_code}' is invalid or expired.")
 
-        # Apply points if customer has enough
         if customer != Customer.get_walkin_customer():
-            if points_used > customer.points:
-                messages.error(request, "🚫 Customer does not have enough loyalty points.")
-                return redirect('sales:pos_checkout')
+            max_usable_points = min(points_used, customer.points, subtotal - discount_amount)
         else:
-            points_used = 0  # Prevent point usage by walk-in
+            max_usable_points = 0
 
-        total = max(subtotal - discount_amount - points_used, 0)
+        total = max(subtotal - discount_amount - max_usable_points, 0)
         change_due = amount_paid - total if payment_method != 'Credit' else 0
 
         if payment_method != 'Credit' and amount_paid < total:
@@ -85,7 +80,7 @@ def process_sale(request):
             change_due=change_due,
             discount_amount=discount_amount,
             coupon_code=valid_coupon.code if valid_coupon else '',
-            points_redeemed=points_used  # Optional: add this field to SaleTransaction model
+            points_redeemed=max_usable_points
         )
 
         total_points_earned = 0
@@ -136,8 +131,7 @@ def process_sale(request):
                 related_entry=entry
             )
 
-        # Loyalty: Burn and Earn
-        customer.points = max(customer.points - points_used + total_points_earned, 0)
+        customer.points = max(customer.points - max_usable_points + total_points_earned, 0)
         customer.save()
         customer.update_tier()
 
@@ -157,8 +151,12 @@ def process_sale(request):
 
 @login_required
 def pos_checkout(request):
-    customers = Customer.objects.all().order_by('name')
-    return render(request, 'sales/pos_checkout.html', {'customers': customers})
+    customers = Customer.objects.filter(is_active=True).order_by('name')
+    customer_points = {str(c.id): c.points for c in customers}
+    return render(request, 'sales/pos_checkout.html', {
+        'customers': customers,
+        'customer_points': json.dumps(customer_points)
+    })
 
 def product_search_api(request):
     query = request.GET.get('q', '')
@@ -181,4 +179,22 @@ def product_search_api(request):
 @login_required
 def receipt_view(request, id):
     transaction = SaleTransaction.objects.get(id=id)
-    return render(request, 'sales/receipt.html', {'transaction': transaction})
+    items = transaction.items.all()
+
+    # Add total_amount to each item for receipt display
+    for item in items:
+        item.total_amount = (
+            float(item.quantity) * float(item.price_at_sale) - float(item.discount_amount)
+        )
+
+    total_points_earned = sum(item.points_earned for item in items)
+    points_redeemed = transaction.points_redeemed or 0
+    remaining_points = transaction.customer.points
+
+    return render(request, 'sales/receipt.html', {
+        'transaction': transaction,
+        'items': items,
+        'total_points_earned': total_points_earned,
+        'points_redeemed': points_redeemed,
+        'remaining_points': remaining_points
+    })

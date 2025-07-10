@@ -47,10 +47,10 @@ ROOT_URLCONF = 'grocify.urls'
 
 TEMPLATES = [
     {
-        'DIRS': [ BASE_DIR / 'templates' ],
+        'DIRS': [ BASE_DIR/ 'dashboard' / 'templates'],
         'APP_DIRS': True,
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [ BASE_DIR / 'templates' ],  # Global templates
+        'DIRS': [ BASE_DIR / 'templates'],  # Global templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -88,7 +88,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = 'users:login'
-LOGIN_REDIRECT_URL = 'sales:pos'
+LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = 'users:login'
 
 

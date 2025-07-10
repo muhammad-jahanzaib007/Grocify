@@ -1,6 +1,66 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
-{% block header %}Dashboard Overview{% endblock %}
+{% block title %}Grocify Dashboard{% endblock %}
 {% block content %}
-  <p class="lead">Welcome to your admin dashboard. Stats and insights will live here soon!</p>
+<div class="container mt-4">
+  <h2 class="mb-4 text-center">🧭 Grocify Admin Dashboard</h2>
+  <div class="row g-3">
+
+    <!-- 🛒 Sales -->
+    <div class="col-md-3">
+      <a href="{% url 'sales:index' %}" class="btn btn-outline-primary w-100 py-3">
+        🛒 Sales
+      </a>
+    </div>
+
+    <!-- 📦 Inventory -->
+    <div class="col-md-3">
+      <a href="{% url 'inventory:index' %}" class="btn btn-outline-success w-100 py-3">
+        📦 Inventory
+      </a>
+    </div>
+
+    <!-- 👥 Customers -->
+    <div class="col-md-3">
+      <a href="{% url 'customers:index' %}" class="btn btn-outline-warning w-100 py-3">
+        👥 Customers
+      </a>
+    </div>
+
+    <!-- ⭐ Loyalty -->
+    <div class="col-md-3">
+      <a href="{% url 'loyalty:index' %}" class="btn btn-outline-info w-100 py-3">
+        ⭐ Loyalty
+      </a>
+    </div>
+
+    <!-- 💳 Credit -->
+    <div class="col-md-3">
+      <a href="{% url 'credit:index' %}" class="btn btn-outline-secondary w-100 py-3">
+        💳 Credit
+      </a>
+    </div>
+
+    <!-- 💸 Expenses -->
+    <div class="col-md-3">
+      <a href="{% url 'expenses:index' %}" class="btn btn-outline-danger w-100 py-3">
+        💸 Expenses
+      </a>
+    </div>
+
+    <!-- 📊 Reports -->
+    <div class="col-md-3">
+      <a href="{% url 'reports:index' %}" class="btn btn-outline-dark w-100 py-3">
+        📊 Reports
+      </a>
+    </div>
+
+    <!-- ⚙️ Settings -->
+    <div class="col-md-3">
+      <a href="{% url 'settings:index' %}" class="btn btn-outline-light w-100 py-3">
+        ⚙️ Settings
+      </a>
+    </div>
+
+  </div>
+</div>
 {% endblock %}

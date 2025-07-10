@@ -37,7 +37,9 @@ function renderCart() {
   const cartInput = document.getElementById('cart-input');
   const totalEl = document.getElementById('cart-total');
   const paidInput = document.querySelector('input[name="amount_paid"]');
+  const pointsInput = document.querySelector('input[name="points_used"]');
   const changeBox = document.getElementById('change-due');
+  const customerSelect = document.getElementById('customer-select');
 
   tbody.innerHTML = '';
   let grand = 0;
@@ -66,15 +68,23 @@ function renderCart() {
   totalEl.innerText = grand.toFixed(2);
   cartInput.value = JSON.stringify(cart);
 
+  // Cap points used
+  const selectedId = customerSelect?.value;
+  const maxPoints = customerPoints[selectedId] || 0;
+  const pointsUsed = Math.min(parseInt(pointsInput?.value || 0), maxPoints, grand);
+  if (pointsInput) pointsInput.value = pointsUsed;
+
+  const totalAfterPoints = grand - pointsUsed;
+
   // Calculate change due
   if (paidInput && changeBox) {
     const paidAmount = parseFloat(paidInput.value) || 0;
-    const changeDue = paidAmount - grand;
+    const changeDue = paidAmount - totalAfterPoints;
     changeBox.value = changeDue >= 0 ? changeDue.toFixed(2) : '0.00';
   }
 }
 
-// Fetch products matching search term
+// Product search
 function searchProducts(term) {
   fetch(`/api/products/?q=${encodeURIComponent(term)}`)
     .then(res => res.json())
@@ -126,7 +136,7 @@ function searchProducts(term) {
     });
 }
 
-// DOM Ready Setup
+// DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
   const searchBox = document.getElementById('product-search');
   if (searchBox) {
@@ -144,26 +154,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const paidInput = document.querySelector('input[name="amount_paid"]');
-  if (paidInput) {
-    paidInput.addEventListener('input', () => renderCart());
+  document.querySelector('input[name="amount_paid"]')?.addEventListener('input', renderCart);
+  document.querySelector('input[name="points_used"]')?.addEventListener('input', renderCart);
+
+  const customerSelect = document.getElementById('customer-select');
+  const pointsPreview = document.getElementById('customer-points-preview');
+
+  if (customerSelect && pointsPreview) {
+    customerSelect.addEventListener('change', () => {
+      const selectedId = customerSelect.value;
+      const points = customerPoints[selectedId] || 0;
+      pointsPreview.textContent = selectedId ? `Points Available: ${points}` : 'Points Available: —';
+      renderCart();
+    });
   }
-
-  const now = new Date();
-  const receiptId = now.toISOString().slice(0, 19).replace(/[-T:]/g, '');
-  const receiptSpan = document.getElementById('receipt-id');
-  const receiptInput = document.getElementById('receipt-id-input');
-
-  if (receiptSpan) receiptSpan.textContent = `Receipt ID: ${receiptId}`;
-  if (receiptInput) receiptInput.value = receiptId;
 });
-const customerSelect = document.getElementById('customer-select');
-const pointsPreview = document.getElementById('customer-points-preview');
-
-if (customerSelect && pointsPreview) {
-  customerSelect.addEventListener('change', () => {
-    const selectedId = customerSelect.value;
-    const points = customerPoints[selectedId] || 0;
-    pointsPreview.textContent = selectedId ? `Points Available: ${points}` : 'Points Available: —';
-  });
-}

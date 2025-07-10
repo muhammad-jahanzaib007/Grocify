@@ -22,6 +22,7 @@ class Customer(models.Model):
     points = models.PositiveIntegerField(default=0)
     tier = models.ForeignKey(LoyaltyTier, on_delete=models.SET_NULL, null=True, blank=True)
     joined_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.name} ({self.phone})"

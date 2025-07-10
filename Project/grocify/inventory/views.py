@@ -4,7 +4,7 @@ from django.db.models import Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET
 import csv
-
+from django.contrib.auth.decorators import login_required
 from .models import (
     InventoryItem, StockEntry, StockLedger,
     Product, Location, Category
@@ -237,3 +237,6 @@ def product_search_api(request):
                 })
 
     return JsonResponse(results, safe=False)
+@login_required
+def admin_dashboard(request):
+    return render(request, 'dashboard/admin_dashboard.html')

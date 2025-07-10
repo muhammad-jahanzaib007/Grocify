@@ -39,9 +39,4 @@ def handle_sale_transaction(sender, instance, created, **kwargs):
             related_entry=entry
         )
 
-    # Award loyalty points
-    if instance.customer:
-        cust = instance.customer
-        cust.points += int(instance.total_amount)
-        cust.save()
-        cust.update_tier()
+    # Loyalty points are now handled in process_sale — no need to duplicate here
