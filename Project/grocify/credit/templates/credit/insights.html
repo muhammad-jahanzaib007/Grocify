@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Credit Insights{% endblock %}
+{% block content %}
+<h2>📈 Credit Overview</h2>
+
+<div class="card p-3 mb-4">
+  <h4>Total Outstanding: Rs. {{ total_pending }}</h4>
+</div>
+
+<h4>Top Customers by Balance</h4>
+<table class="table">
+  <thead><tr><th>Name</th><th>Pending</th></tr></thead>
+  <tbody>
+    {% for c in top_customers %}
+      <tr>
+        <td>{{ c.full_name }}</td>
+        <td>Rs. {{ c.pending_balance }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="2">No balances found</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

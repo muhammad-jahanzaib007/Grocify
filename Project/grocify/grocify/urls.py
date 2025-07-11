@@ -27,6 +27,7 @@ urlpatterns = [
     path('loyalty/', include('loyalty.urls', namespace='loyalty')),
     path('credit/', include('credit.urls', namespace='credit')),
     path('reports/', include('analytics.urls', namespace='reports')),
+    #path('api/', include('api.urls', namespace='api')),
     path('settings/', include('settings.urls', namespace='settings')),
-    path('api/', include('api.urls', namespace='api')),
+    
 ]

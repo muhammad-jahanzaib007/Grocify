@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Credit Dashboard{% endblock %}
+{% block content %}
+<h2>📋 Customers with Credit</h2>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Balance</th>
+      <th>Limit</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for customer in customers %}
+    <tr>
+      <td>{{ customer.full_name }}</td>
+      <td>Rs. {{ customer.pending_balance }}</td>
+      <td>Rs. {{ customer.credit_limit }}</td>
+      <td><a href="{% url 'credit:customer_detail' customer.id %}">Details</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">🎉 All credit cleared</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a class="btn btn-primary mt-3" href="{% url 'credit:add_payment' %}">Log Payment</a>
+{% endblock %}

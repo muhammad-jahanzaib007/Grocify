@@ -31,6 +31,9 @@ INSTALLED_APPS = [
     'customers.apps.CustomersConfig',
     'expenses.apps.ExpensesConfig',
     'analytics.apps.AnalyticsConfig',
+    'loyalty.apps.LoyaltyConfig',
+    'credit.apps.CreditConfig',
+    'settings.apps.SettingsConfig',
 ]
 
 MIDDLEWARE = [

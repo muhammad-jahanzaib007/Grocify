@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.full_name }} — Credit Details{% endblock %}
+{% block content %}
+<h2>🧾 {{ customer.full_name }}</h2>
+<p><strong>Pending Balance:</strong> Rs. {{ customer.pending_balance }}</p>
+<p><strong>Credit Limit:</strong> Rs. {{ customer.credit_limit }}</p>
+
+<hr>
+<h4>📋 Credit Sales</h4>
+<table class="table table-bordered">
+  <thead>
+    <tr><th>Amount</th><th>Issued</th><th>Due</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    {% for sale in credit_sales %}
+    <tr>
+      <td>Rs. {{ sale.amount }}</td>
+      <td>{{ sale.issued_on|date:"M d, Y" }}</td>
+      <td>{{ sale.due_date }}</td>
+      <td>{{ sale.is_settled|yesno:"Settled,Pending" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">✅ No active credit sales</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<hr>
+<h4>💵 Payments</h4>
+<table class="table table-sm">
+  <thead>
+    <tr><th>Amount</th><th>Date</th><th>Method</th></tr>
+  </thead>
+  <tbody>
+    {% for p in payments %}
+    <tr>
+      <td>Rs. {{ p.amount_paid }}</td>
+      <td>{{ p.paid_on|date:"M d, Y" }}</td>
+      <td>{{ p.method|title }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">— No payments yet</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
