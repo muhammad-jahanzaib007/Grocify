@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from inventory.models import Product, Location
 from customers.models import Customer
 
+# ─── SALE TRANSACTION ───────────────────────────────────────────────────────────
 class SaleTransaction(models.Model):
     PAYMENT_METHODS = [
         ('Cash', 'Cash'),
@@ -15,7 +16,7 @@ class SaleTransaction(models.Model):
 
     invoice_number = models.CharField(max_length=20, unique=True, blank=True)
     cashier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
+    customer = models.ForeignKey('customers.Customer', on_delete=models.SET_NULL, null=True, blank=True)
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -29,25 +30,44 @@ class SaleTransaction(models.Model):
     is_return = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
-        # Ensure a Walk-In Customer if none provided
+        from loyalty.models import LoyaltyProfile, PointTransaction  # ✅ Lazy import to avoid circular issues
+        from loyalty.utils import calculate_earned_points
+
         if not self.customer:
             self.customer = Customer.get_walkin_customer()
 
-        # Auto-generate invoice if missing
         if not self.invoice_number:
             self.invoice_number = f"INV-{uuid.uuid4().hex[:8].upper()}"
 
         super().save(*args, **kwargs)
 
+        if self.points_earned == 0 and self.payment_method != 'Store Points' and not getattr(self, '_manual_points', False):
+            profile, _ = LoyaltyProfile.objects.get_or_create(customer=self.customer)
+            tier_name = profile.tier.name if profile.tier else None
+            earned = calculate_earned_points(float(self.total_amount), tier_name)
+
+            profile.points += earned
+            profile.lifetime_points += earned
+            profile.save()
+
+            PointTransaction.objects.create(
+                profile=profile,
+                points=earned,
+                transaction_type='earned',
+                source=f"Sale #{self.invoice_number}",
+                note='Auto-awarded from completed sale'
+            )
+
+            self.points_earned = earned
+            super().save(update_fields=['points_earned'])
+
     def __str__(self):
         return f"Invoice #{self.invoice_number} – {self.total_amount} PKR"
 
+
+# ─── SALE ITEM ───────────────────────────────────────────────────────────────────
 class SaleItem(models.Model):
-    transaction = models.ForeignKey(
-        SaleTransaction,
-        on_delete=models.CASCADE,
-        related_name='items'
-    )
+    transaction = models.ForeignKey(SaleTransaction, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     price_at_sale = models.DecimalField(max_digits=10, decimal_places=2)
@@ -56,12 +76,15 @@ class SaleItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} × {self.quantity}"
+
+
+# ─── COUPON ──────────────────────────────────────────────────────────────────────
 class Coupon(models.Model):
     DISCOUNT_TYPES = [
         ('percentage', 'Percentage'),
         ('fixed', 'Fixed Amount'),
     ]
-    
+
     code = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=100)
     discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPES)
@@ -79,15 +102,20 @@ class Coupon(models.Model):
 
     def is_valid(self):
         from django.utils import timezone
-        return (self.is_active and 
-                self.start_date <= timezone.now() <= self.end_date and
-                self.used_count < self.max_uses)
+        return (
+            self.is_active and
+            self.start_date <= timezone.now() <= self.end_date and
+            self.used_count < self.max_uses
+        )
+
+
+# ─── RETURNS ─────────────────────────────────────────────────────────────────────
 class Return(models.Model):
     RETURN_TYPES = [
         ('full', 'Full Return'),
         ('partial', 'Partial Return'),
     ]
-    
+
     original_transaction = models.ForeignKey(SaleTransaction, on_delete=models.CASCADE, related_name='returns')
     return_transaction = models.ForeignKey(SaleTransaction, on_delete=models.CASCADE, related_name='return_for', null=True, blank=True)
     return_type = models.CharField(max_length=20, choices=RETURN_TYPES)
@@ -98,6 +126,8 @@ class Return(models.Model):
 
     def __str__(self):
         return f"Return for {self.original_transaction.invoice_number}"
+
+
 class ReturnItem(models.Model):
     return_record = models.ForeignKey(Return, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)

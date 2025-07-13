@@ -6,6 +6,11 @@ function addToCart(product) {
   if (existing) {
     existing.qty += 1;
   } else {
+    // Defensive check before adding
+    if (isNaN(product.price) || product.price <= 0) {
+      alert(`🚫 Price is invalid for ${product.name}. Cannot add to cart.`);
+      return;
+    }
     cart.push({ ...product, qty: 1, discount: 0 });
   }
   renderCart();
@@ -19,14 +24,20 @@ function removeFromCart(index) {
 
 // Update quantity
 function updateQuantity(index, value) {
-  const qty = Math.max(1, parseFloat(value));
+  let qty = parseFloat(value);
+  if (isNaN(qty) || qty <= 0) {
+    qty = 1;
+  }
   cart[index].qty = qty;
   renderCart();
 }
 
 // Update discount
 function updateDiscount(index, value) {
-  const disc = Math.max(0, parseFloat(value));
+  let disc = parseFloat(value);
+  if (isNaN(disc) || disc < 0) {
+    disc = 0;
+  }
   cart[index].discount = disc;
   renderCart();
 }
@@ -68,7 +79,6 @@ function renderCart() {
   totalEl.innerText = grand.toFixed(2);
   cartInput.value = JSON.stringify(cart);
 
-  // Cap points used
   const selectedId = customerSelect?.value;
   const maxPoints = customerPoints[selectedId] || 0;
   const pointsUsed = Math.min(parseInt(pointsInput?.value || 0), maxPoints, grand);
@@ -76,7 +86,6 @@ function renderCart() {
 
   const totalAfterPoints = grand - pointsUsed;
 
-  // Calculate change due
   if (paidInput && changeBox) {
     const paidAmount = parseFloat(paidInput.value) || 0;
     const changeDue = paidAmount - totalAfterPoints;
@@ -94,7 +103,7 @@ function searchProducts(term) {
 
       if (data.length === 1 && term.length >= 4) {
         const p = data[0];
-        const priceValue = Number(p.price);
+        const priceValue = Number(p.price); // ✅ expects 'price' field from backend
         if (!isNaN(priceValue) && priceValue > 0) {
           addToCart({
             product_id: p.id,
@@ -102,10 +111,8 @@ function searchProducts(term) {
             price: priceValue,
             discount: 0
           });
-
-          const searchBox = document.getElementById('product-search');
-          searchBox.value = '';
-          searchBox.focus();
+          document.getElementById('product-search').value = '';
+          document.getElementById('product-search').focus();
         }
         return;
       }
@@ -144,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const term = searchBox.value.trim();
       if (term.length >= 2) searchProducts(term);
     });
-
     searchBox.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -159,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const customerSelect = document.getElementById('customer-select');
   const pointsPreview = document.getElementById('customer-points-preview');
-
   if (customerSelect && pointsPreview) {
     customerSelect.addEventListener('change', () => {
       const selectedId = customerSelect.value;
@@ -168,4 +173,47 @@ document.addEventListener('DOMContentLoaded', () => {
       renderCart();
     });
   }
+
+  // 💡 Optional: Cart sanity check before form submit
+  document.getElementById('pos-form')?.addEventListener('submit', e => {
+    const hasInvalid = cart.some(item => item.qty <= 0 || item.price <= 0);
+    if (hasInvalid) {
+      e.preventDefault();
+      alert("🚫 Cart contains invalid items. Please check price and quantity.");
+    }
+  });
 });
+/* Analytics integration and POS UI enhancement */
+/* Add this snippet to enable analytics tracking for completed sales */
+
+function sendAnalyticsEvent(eventName, eventData) {
+    fetch('/api/analytics/event/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: eventName, data: eventData })
+    })
+    .then(response => response.json())
+    .then(data => console.log('Analytics event sent:', data))
+    .catch(error => console.error('Error sending analytics event:', error));
+}
+
+// Enhance the POS sale completion: If a completeSale function exists, wrap it to include analytics tracking.
+if (typeof completeSale === 'function') {
+    var originalCompleteSale = completeSale;
+    completeSale = function() {
+        originalCompleteSale.apply(this, arguments);
+        // Capture sale value from a UI element (e.g., an element with id "sale-amount")
+        var saleValue = document.getElementById('sale-amount') ? parseFloat(document.getElementById('sale-amount').innerText) : 0;
+        sendAnalyticsEvent('sale_completed', { amount: saleValue });
+    };
+} else {
+    // Alternatively, attach an event listener to a button with id "complete-sale" if completeSale is not defined.
+    var completeSaleButton = document.getElementById('complete-sale');
+    if (completeSaleButton) {
+        completeSaleButton.addEventListener('click', function() {
+            // You can include POS sale completion logic here if needed.
+            var saleValue = document.getElementById('sale-amount') ? parseFloat(document.getElementById('sale-amount').innerText) : 0;
+            sendAnalyticsEvent('sale_completed', { amount: saleValue });
+        });
+    }
+}

@@ -5,19 +5,22 @@ from inventory.models import InventoryItem, StockEntry, StockLedger
 
 @receiver(post_save, sender=SaleTransaction)
 def handle_sale_transaction(sender, instance, created, **kwargs):
-    if not created:
-        return
+    if not created or instance.is_return:
+        return  # Only deduct stock on original sales
 
-    # Deduct stock & log ledger
-    for item in instance.items.all():
+    for item in instance.items.select_related('product').all():
         product = item.product
         location = instance.location
         qty = item.quantity
+
+        if not product or not location or qty <= 0:
+            continue  # Skip invalid entries
 
         inventory, _ = InventoryItem.objects.get_or_create(
             product=product,
             location=location
         )
+
         before = inventory.qty_on_hand
         inventory.qty_on_hand -= qty
         inventory.save()
@@ -30,6 +33,7 @@ def handle_sale_transaction(sender, instance, created, **kwargs):
             note=f"Invoice {instance.invoice_number}",
             created_by=instance.cashier
         )
+
         StockLedger.objects.create(
             product=product,
             location=location,
@@ -39,4 +43,4 @@ def handle_sale_transaction(sender, instance, created, **kwargs):
             related_entry=entry
         )
 
-    # Loyalty points are now handled in process_sale — no need to duplicate here
+    # Loyalty points now handled in transaction.save() — avoids duplicate rewards

@@ -6,21 +6,20 @@ from .forms import CreditPaymentForm  # You’ll build this next
 
 @login_required
 def credit_dashboard(request):
-    customers = Customer.objects.filter(pending_balance__gt=0)
+    customers = Customer.objects.filter(outstanding_balance__gt=0)
     return render(request, 'credit/dashboard.html', {'customers': customers})
 
 
 @login_required
 def customer_credit_detail(request, customer_id):
-    customer = get_object_or_404(Customer, pk=customer_id)
-    credit_sales = customer.credit_sales.all()
+    customer = get_object_or_404(Customer, id=customer_id)
+    credit_sales = customer.creditsale_set.all()
     payments = customer.creditpayment_set.all()
     return render(request, 'credit/detail.html', {
         'customer': customer,
         'credit_sales': credit_sales,
         'payments': payments,
     })
-
 
 @login_required
 def add_credit_payment(request):

@@ -1,4 +1,4 @@
-# Loyalty Tier Configuration
+# ─── TIER CONFIGURATION ─────────────────────────────────────────────────────────
 LOYALTY_TIERS = {
     'Bronze': 0,
     'Silver': 1000,
@@ -6,9 +6,18 @@ LOYALTY_TIERS = {
     'Platinum': 5000,
 }
 
+TIER_MULTIPLIERS = {
+    'Bronze': 1.0,
+    'Silver': 1.1,
+    'Gold': 1.25,
+    'Platinum': 1.5,
+}
+
+
+# ─── TIER ASSIGNMENT LOGIC ─────────────────────────────────────────────────────
 def get_loyalty_tier(lifetime_points: int) -> str:
     """
-    Returns the appropriate loyalty tier based on lifetime points.
+    Returns the appropriate tier name based on lifetime points.
     """
     sorted_tiers = sorted(LOYALTY_TIERS.items(), key=lambda x: x[1])
     current_tier = 'Bronze'
@@ -20,17 +29,11 @@ def get_loyalty_tier(lifetime_points: int) -> str:
     return current_tier
 
 
+# ─── POINT CALCULATION ─────────────────────────────────────────────────────────
 def calculate_earned_points(sale_amount: float, tier: str = None) -> int:
     """
-    Calculates how many points should be earned from a sale, 
-    optionally applying tier multipliers.
+    Returns earned points from a sale, applying tier multiplier.
     """
-    base_rate = 0.05  # 5% back as points
-    tier_multiplier = {
-        'Bronze': 1.0,
-        'Silver': 1.1,
-        'Gold': 1.25,
-        'Platinum': 1.5,
-    }
-    multiplier = tier_multiplier.get(tier, 1.0)
+    base_rate = 0.05  # 5% back
+    multiplier = TIER_MULTIPLIERS.get(tier, 1.0)
     return int(sale_amount * base_rate * multiplier)

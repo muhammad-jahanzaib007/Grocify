@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Customer, LoyaltyTier, CreditSale
+from .models import Customer, CreditSale
+from loyalty.models import LoyaltyTier
 
 class CreditSaleInline(admin.TabularInline):
     model = CreditSale

@@ -1,11 +1,18 @@
 from django.contrib import admin
 from .models import LoyaltyProfile, PointTransaction, Reward, RewardRedemption
 
+class PointTransactionInline(admin.TabularInline):
+    model = PointTransaction
+    extra = 0
+    readonly_fields = ['points', 'transaction_type', 'date', 'source']
+    can_delete = False
+    show_change_link = True
 @admin.register(LoyaltyProfile)
 class LoyaltyProfileAdmin(admin.ModelAdmin):
     list_display = ['customer', 'points', 'tier', 'lifetime_points', 'last_updated']
-    search_fields = ['customer__full_name', 'tier']
+    search_fields = ['customer__name', 'tier__name']
     list_filter = ['tier']
+    inlines = [PointTransactionInline]
 
 @admin.register(PointTransaction)
 class PointTransactionAdmin(admin.ModelAdmin):
@@ -23,3 +30,4 @@ class RewardAdmin(admin.ModelAdmin):
 class RewardRedemptionAdmin(admin.ModelAdmin):
     list_display = ['profile', 'reward', 'points_used', 'redeemed_on']
     search_fields = ['profile__customer__full_name', 'reward__name']
+

@@ -1,17 +1,6 @@
 from django.db import models
 from django.utils import timezone
-
-class LoyaltyTier(models.Model):
-    name = models.CharField(max_length=50)
-    min_points = models.PositiveIntegerField()
-    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
-
-    def __str__(self):
-        return f"{self.name} – {self.discount_percent}% off"
-
-    class Meta:
-        ordering = ['-min_points']  # Highest tier first for smart selection
-
+from loyalty.models import LoyaltyTier  # ✅ Correct import from loyalty app
 
 class Customer(models.Model):
     name = models.CharField(max_length=100)
@@ -19,27 +8,17 @@ class Customer(models.Model):
     email = models.EmailField(blank=True)
     address = models.TextField(blank=True)
     outstanding_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     points = models.PositiveIntegerField(default=0)
     tier = models.ForeignKey(LoyaltyTier, on_delete=models.SET_NULL, null=True, blank=True)
+
     joined_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.name} ({self.phone})"
 
-    def update_tier(self):
-        """
-        Assigns the highest LoyaltyTier matching this customer's point balance.
-        """
-        tier = LoyaltyTier.objects.filter(min_points__lte=self.points).order_by('-min_points').first()
-        if tier and self.tier != tier:
-            self.tier = tier
-            self.save(update_fields=['tier'])
-
     def recalculate_outstanding(self):
-        """
-        Recalculates outstanding balance from unpaid credit sales.
-        """
         total_due = self.credit_sales.filter(is_paid=False).aggregate(
             total=models.Sum('balance_due')
         )['total'] or 0
@@ -48,10 +27,6 @@ class Customer(models.Model):
 
     @classmethod
     def get_walkin_customer(cls):
-        """
-        Returns the singleton 'Walk-In Customer' object.
-        Creates it if not found.
-        """
         return cls.objects.get_or_create(
             phone='0000000000',
             defaults={'name': 'Walk-In Customer'}

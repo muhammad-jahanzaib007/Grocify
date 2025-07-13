@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'loyalty.apps.LoyaltyConfig',
     'credit.apps.CreditConfig',
     'settings.apps.SettingsConfig',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
