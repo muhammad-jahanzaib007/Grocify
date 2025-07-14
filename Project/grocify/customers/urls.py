@@ -6,4 +6,4 @@ app_name = 'customers'
 urlpatterns = [
     path('', views.customers_dashboard, name='index'),
     
-]
+] 

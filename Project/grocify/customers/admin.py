@@ -1,12 +1,20 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Customer, CreditSale
+from .models import Customer
 from loyalty.models import LoyaltyTier
+from credit.models import CreditSale
 
 class CreditSaleInline(admin.TabularInline):
     model = CreditSale
     extra = 0
-    fields = ('transaction', 'credit_amount', 'amount_paid', 'balance_due', 'due_date', 'is_paid')
+    fields = (
+        'transaction',
+        'credit_amount',
+        'amount_paid',
+        'balance_due',
+        'due_date',
+        'is_settled',
+    )
     readonly_fields = fields
     can_delete = False
     show_change_link = True
@@ -14,8 +22,13 @@ class CreditSaleInline(admin.TabularInline):
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'phone', 'email', 'outstanding_balance',
-        'points', 'tier_badge', 'joined_at'
+        'name',
+        'phone',
+        'email',
+        'outstanding_balance',
+        'points',
+        'tier_badge',
+        'joined_at',
     )
     list_filter = ('tier', 'joined_at')
     search_fields = ('name', 'phone', 'email')
@@ -26,7 +39,8 @@ class CustomerAdmin(admin.ModelAdmin):
     def tier_badge(self, obj):
         if obj.tier:
             return format_html(
-                '<span style="color:#1abc9c; font-weight:600;">{}</span>',
+                '<span style="color:{0}; font-weight:600;">{1}</span>',
+                obj.tier.badge_color,
                 obj.tier.name
             )
         return "-"
@@ -42,13 +56,4 @@ class LoyaltyTierAdmin(admin.ModelAdmin):
     list_display = ('name', 'min_points', 'discount_percent')
     ordering = ('-min_points',)
 
-@admin.register(CreditSale)
-class CreditSaleAdmin(admin.ModelAdmin):
-    list_display = (
-        'customer', 'transaction', 'credit_amount',
-        'amount_paid', 'balance_due', 'due_date',
-        'is_paid', 'created_at'
-    )
-    list_filter = ('is_paid', 'due_date', 'created_at')
-    search_fields = ('customer__name', 'customer__phone', 'transaction__invoice_number')
-    ordering = ('-created_at',)
+
