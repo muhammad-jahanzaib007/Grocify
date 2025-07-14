@@ -32,8 +32,8 @@
 
   <h4>Actions</h4>
   <ul>
-    <li><a href="{% url 'loyalty:transaction_history' %}?customer_id={{ profile.customer.id }}">View Point History</a></li>
-    <li><a href="{% url 'loyalty:redeem_reward' %}?customer_id={{ profile.customer.id }}">Redeem Rewards</a></li>
+    <li><a href="{% url 'loyalty:history' %}?customer_id={{ profile.customer.id }}">View Point History</a></li>
+    <li><a href="{% url 'loyalty:redeem' %}?customer_id={{ profile.customer.id }}">Redeem Rewards</a></li>
   </ul>
 </div>
 {% endblock %}

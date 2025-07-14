@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4 text-center">👥 Customer Dashboard</h2>
+
+  <!-- 🔢 Summary Cards -->
+  <div class="row g-3">
+    <div class="col-md-3">
+      <div class="card text-bg-primary">
+        <div class="card-body">
+          <h5>Total Customers</h5>
+          <h3>{{ total_customers }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-success">
+        <div class="card-body">
+          <h5>Active Customers</h5>
+          <h3>{{ active_customers }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-danger">
+        <div class="card-body">
+          <h5>Total Outstanding</h5>
+          <h3>{{ total_outstanding }} PKR</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-info">
+        <div class="card-body">
+          <h5>Loyalty Tier Count</h5>
+          <h3>{{ tier_count }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 👥 Recent Customers Table -->
+  <div class="mt-5">
+    <h4 class="mb-3">Recent Customers</h4>
+    <table class="table table-bordered table-hover">
+      <thead class="table-light">
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Points</th>
+          <th>Tier</th>
+          <th>Balance</th>
+          <th>Joined</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for customer in recent_customers %}
+        <tr>
+          <td>{{ customer.name }}</td>
+          <td>{{ customer.phone }}</td>
+          <td>{{ customer.email|default:"—" }}</td>
+          <td>{{ customer.points }}</td>
+          <td>
+            {% if customer.tier %}
+              <span style="color: {{ customer.tier.badge_color }}">{{ customer.tier.name }}</span>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>{{ customer.outstanding_balance }} PKR</td>
+          <td>{{ customer.joined_at|date:"M d, Y" }}</td>
+          <td>
+            <a href="{% url 'loyalty:history' %}?customer_id={{ customer.id }}" class="btn btn-sm btn-outline-info">🔁 Points</a>
+            <a href="tel:{{ customer.phone }}" class="btn btn-sm btn-outline-secondary">📞</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center">No customers found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

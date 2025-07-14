@@ -1,7 +1,20 @@
 from django.shortcuts import render
+from django.db.models import Sum
 from .models import Customer
 
-# Create your views here.
-customers = Customer.objects.all().order_by('name')
 def customers_dashboard(request):
-    return render(request, 'customers/dashboard.html')
+    total_customers = Customer.objects.count()
+    active_customers = Customer.objects.filter(is_active=True).count()
+    total_outstanding = Customer.objects.aggregate(
+        Sum('outstanding_balance')
+    )['outstanding_balance__sum'] or 0
+    tier_count = Customer.objects.filter(tier__isnull=False).values('tier').distinct().count()
+    recent_customers = Customer.objects.order_by('-joined_at')[:10]
+    context = {
+        'total_customers': total_customers,
+        'active_customers': active_customers,
+        'total_outstanding': total_outstanding,
+        'tier_count': tier_count,
+        'recent_customers': recent_customers,
+    }
+    return render(request, 'customers/dashboard.html', context)

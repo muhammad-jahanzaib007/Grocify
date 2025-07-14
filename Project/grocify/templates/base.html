@@ -101,12 +101,13 @@
 
   <!-- Sidebar -->
   <nav class="sidebar">
-    <a href="#"><img src="{% static 'img/logo-white.png' %}" alt="Logo" width="28" /></a>
-    <a href="{% url 'dashboard:admin_dashboard' %}" title="Dashboard">🏠</a>
-    <a href="{% url 'inventory:stock_dashboard' %}" title="Inventory">📦</a>
-    <a href="{% url 'inventory:add_product' %}" title="Add Product">➕</a>
-    <a href="{% url 'inventory:adjust_stock' %}" title="Adjust Stock">🔧</a>
-    <a href="{% url 'inventory:stock_ledger' %}" title="Ledger">📜</a>
+    <a href="{% url 'sales:index' %}" title="Sales">🛒</a>
+    <a href="{% url 'inventory:index' %}" title="Inventory">📦</a>
+    <a href="{% url 'customers:index' %}" title="Customers">👥</a>
+    <a href="{% url 'loyalty:index' %}" title="Loyalty">⭐</a>
+    <a href="{% url 'expenses:index' %}" title="Expenses">💸</a>
+    <a href="{% url 'reports:index' %}" title="Reports">📊</a>
+
   </nav>
 
   <!-- Header -->
