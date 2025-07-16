@@ -37,6 +37,7 @@ class StockLedgerAdmin(admin.ModelAdmin):
     )
     list_filter = ('location',)
     search_fields = ('product__name',)
+
 @admin.register(DamageReport)
 class DamageReportAdmin(admin.ModelAdmin):
     list_display = ('product', 'location', 'damage_type', 'quantity', 'reported_by', 'reported_at')
@@ -44,6 +45,12 @@ class DamageReportAdmin(admin.ModelAdmin):
     search_fields = ('product__name', 'description')
     readonly_fields = ('reported_at',)
 
+    def save_model(self, request, obj, form, change):
+        if not obj.reported_by:
+            obj.reported_by = request.user
+        super().save_model(request, obj, form, change)
+
+# Registered without custom admin classes
 admin.site.register(Category)
 admin.site.register(Supplier)
 admin.site.register(Location)

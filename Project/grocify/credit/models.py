@@ -1,5 +1,3 @@
-# credit/models.py
-
 from decimal import Decimal, InvalidOperation
 from django.db import models
 from django.utils import timezone
@@ -15,6 +13,7 @@ class CreditSale(models.Model):
     transaction = models.OneToOneField(
         SaleTransaction,
         on_delete=models.CASCADE,
+        null=True, blank=True,
         related_name='credit_sale'
     )
     credit_amount = models.DecimalField(

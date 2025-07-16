@@ -26,7 +26,14 @@ class SaleTransactionAdmin(admin.ModelAdmin):
     search_fields = ('invoice_number', 'customer__name', 'customer__phone')
     inlines = [SaleItemInline]
     date_hierarchy = 'date'
-    readonly_fields = ('invoice_number', 'points_earned', 'points_redeemed')
+    readonly_fields = (
+    'invoice_number', 'points_earned',
+    'points_redeemed', 'total_before_points'
+)
+
+    def total_before_points(self, obj):
+        return obj.total_before_points
+
 
 
 # ─── COUPON MANAGEMENT ──────────────────────────────────────────────────────────

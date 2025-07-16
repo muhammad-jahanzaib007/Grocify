@@ -4,18 +4,19 @@
 {% block extra_css %}
 <style>
   .receipt-card {
-    max-width: 700px;
-    margin: auto;
-    font-family: "Segoe UI", sans-serif;
+  width: 80mm;
+  margin: 0 auto;
+  font-family: "Nunito", sans-serif;
+  font-size: 8pt;
   }
   .receipt-header {
     border-bottom: 2px dashed #ccc;
-    margin-bottom: 20px;
+    margin-bottom: 10pt;
     text-align: center;
   }
   .receipt-table th, .receipt-table td {
-    font-size: 0.95rem;
-    padding: 6px 8px;
+    font-size: 0.55rem;
+    padding: 6px 10px;
   }
   .receipt-summary td {
     font-weight: 600;
@@ -75,56 +76,82 @@
   </div>
 
   <!-- Financial Summary -->
-  <table class="table table-sm receipt-summary">
-    <tr>
-      <td class="text-end">Subtotal:</td>
-      <td class="text-end">{{ transaction.total_amount|add:transaction.discount_amount|floatformat:2 }}</td>
-    </tr>
-    {% if transaction.discount_amount > 0 %}
-    <tr>
-      <td class="text-end">Discount:</td>
-      <td class="text-end text-danger">– {{ transaction.discount_amount|floatformat:2 }}</td>
-    </tr>
-    {% endif %}
-    {% if transaction.points_redeemed %}
-    <tr>
-      <td class="text-end">Points Redeemed:</td>
-      <td class="text-end text-success">– {{ transaction.points_redeemed }}</td>
-    </tr>
-    {% endif %}
-    {% if transaction.coupon_code %}
-    <tr>
-      <td class="text-end">Coupon:</td>
-      <td class="text-end">{{ transaction.coupon_code }}</td>
-    </tr>
-    {% endif %}
-    <tr>
-      <td class="text-end">Total Amount:</td>
-      <td class="text-end fw-bold">{{ transaction.total_amount|floatformat:2 }}</td>
-    </tr>
-    <tr>
-      <td class="text-end">Amount Paid:</td>
-      <td class="text-end">{{ transaction.amount_paid|floatformat:2 }}</td>
-    </tr>
-    <tr>
-      <td class="text-end">Change Due:</td>
-      <td class="text-end">{{ transaction.change_due|floatformat:2 }}</td>
-    </tr>
-  </table>
+<table class="table table-sm receipt-summary">
 
-  <!-- Loyalty Summary (Always Visible) -->
+  <tr>
+      <td class="text-end">Subtotal:</td>
+      <td class="text-end">{{ transaction.subtotal|floatformat:2 }}</td>
+    </tr>
+  {% if transaction.coupon_code %}
+  <tr>
+    <td class="text-end">Coupon:</td>
+    <td class="text-end">{{ transaction.coupon_description }}</td>
+  </tr>
+  {% endif %}
+  {% if transaction.discount_amount > 0 %}
+  <tr>
+    <td class="text-end">Discount:</td>
+    <td class="text-end text-danger">– {{ transaction.discount_amount|floatformat:2 }}</td>
+  </tr>
+  {% endif %}
+
+  {% if transaction.points_redeemed %}
+  <tr>
+    <td class="text-end">Points Redeemed:</td>
+    <td class="text-end text-success">– {{ transaction.points_redeemed }}</td>
+  </tr>
+  {% if before_points_total %}
+  {% endif %}
+  <tr>
+    <td class="text-end fw-bold">Total:</td>
+    <td class="text-end fw-bold">{{ transaction.total_amount|floatformat:2 }}</td>
+  </tr>
+  {% else %}
+  <tr>
+    <td class="text-end fw-bold">Total Amount:</td>
+    <td class="text-end fw-bold">{{ transaction.total_amount|floatformat:2 }}</td>
+  </tr>
+  {% endif %}
+  <tr>
+    <td class="text-end">Payment Method:</td>
+    <td class="text-end">{{ transaction.payment_method }}</td>
+  </tr>
+  <tr>
+    <td class="text-end">Amount Paid:</td>
+    <td class="text-end">{{ transaction.amount_paid|floatformat:2 }}</td>
+  </tr>
+
+{% if transaction.payment_method == "Credit" %}
+<tr>
+  <td class="text-end text-danger">Credit Due:</td>
+  <td class="text-end text-danger fw-bold">
+    {{ transaction.total_amount|floatformat:2 }}
+  </td>
+</tr>
+{% else %}
+<tr>
+  <td class="text-end">Change Due:</td>
+  <td class="text-end">{{ transaction.change_due|floatformat:2 }}</td>
+</tr>
+{% endif %}
+
+
+</table>
+
+  {% if total_points_earned > 0 %}
   <div class="mt-3">
     <strong>Loyalty Summary</strong><br>
-    Points Earned: {{ total_points_earned }}<br>
     Points Redeemed: {{ points_redeemed }}<br>
+    Points Earned: {{ total_points_earned }}<br>
     Remaining Points: {{ remaining_points }}
   </div>
-
-  <!-- Footer -->
+ {% endif %}
+<hr>
+<div class="text-center mt-3">
+  <img src="{{ barcode_uri }}" alt="Invoice Barcode" style="height:60px;">
+</div>
   <div class="mt-4 text-center">
     <p class="text-muted small">Powered by Grocify POS</p>
-    <a href="{% url 'sales:pos_checkout' %}" class="btn btn-sm btn-outline-primary">← Back to POS</a>
   </div>
 
-</div>
 {% endblock %}

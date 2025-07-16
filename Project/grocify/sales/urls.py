@@ -5,10 +5,10 @@ from dashboard import views as dashboard_views
 app_name = 'sales'
 
 urlpatterns = [
-    path("checkout/", pos_checkout, name="pos_checkout"),
+    path("", pos_checkout, name="index"),
     path("products/", product_search_api, name="product_search_api"),
     path("submit/", process_sale, name="process_sale"),
     path("receipt/<int:id>/", receipt_view, name="receipt"),
-    path('', dashboard_views.admin_dashboard, name='index')
+    path('pos', dashboard_views.admin_dashboard, name='dashboard')
 
 ]

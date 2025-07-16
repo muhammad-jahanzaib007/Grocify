@@ -1,5 +1,3 @@
-# customers/models.py
-
 from decimal import Decimal
 from django.db import models
 from loyalty.models import LoyaltyTier  # Correct import from loyalty app

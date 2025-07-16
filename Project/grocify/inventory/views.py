@@ -4,10 +4,9 @@ from django.db.models import Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET
 import csv
-from django.contrib.auth.decorators import login_required
 from .models import (
     InventoryItem, StockEntry, StockLedger,
-    Product, Location, Category
+    Product, Location, Category, AuditLog
 )
 from .forms import StockAdjustmentForm, ProductForm
 
@@ -121,6 +120,15 @@ def manual_stock_adjustment(request):
                 quantity_changed=quantity_change,
                 quantity_after=inventory.qty_on_hand,
                 related_entry=entry
+            )
+
+            AuditLog.objects.create(
+                action_type='stock_adjustment',
+                user=request.user,
+                product=product,
+                location=location,
+                related_id=entry.id,
+                note=f"Manual adjustment: {quantity_change} units. Reason: {reason}. Note: {note}"
             )
 
             return redirect('inventory:stock_dashboard')
@@ -237,6 +245,32 @@ def product_search_api(request):
                 })
 
     return JsonResponse(results, safe=False)
+
 @login_required
 def admin_dashboard(request):
     return render(request, 'dashboard/admin_dashboard.html')
+@login_required
+def edit_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+
+            # ✅ Log the edit action
+            AuditLog.objects.create(
+                action_type='product_edit',
+                user=request.user,
+                product=product,
+                location=product.default_location,
+                note=f"Edited product '{product.name}' (ID: {product.id}) via admin interface."
+            )
+
+            return redirect('inventory:stock_dashboard')
+    else:
+        form = ProductForm(instance=product)
+
+    return render(request, 'inventory/edit_product.html', {
+        'form': form,
+        'title': f'Edit {product.name}'
+    })

@@ -1,38 +1,49 @@
 let cart = [];
 
-// Add product to cart
+// ✅ Add product to cart with stock awareness
 function addToCart(product) {
   const existing = cart.find(item => item.product_id === product.product_id);
+
+  const alreadyInCart = existing ? existing.qty : 0;
+  const maxStock = product.stock;
+
+  if (alreadyInCart >= maxStock) {
+    alert(`🚫 ${product.name} has only ${maxStock} units in stock. You've already added ${alreadyInCart}.`);
+    return;
+  }
+
   if (existing) {
     existing.qty += 1;
   } else {
-    // Defensive check before adding
-    if (isNaN(product.price) || product.price <= 0) {
-      alert(`🚫 Price is invalid for ${product.name}. Cannot add to cart.`);
-      return;
-    }
-    cart.push({ ...product, qty: 1, discount: 0 });
+    cart.push({ ...product, qty: 1, discount: 0, stock: maxStock });
   }
+
   renderCart();
 }
 
-// Remove item from cart
+// ✅ Remove item from cart
 function removeFromCart(index) {
   cart.splice(index, 1);
   renderCart();
 }
 
-// Update quantity
+// ✅ Update quantity and limit it by stock
 function updateQuantity(index, value) {
   let qty = parseFloat(value);
   if (isNaN(qty) || qty <= 0) {
     qty = 1;
   }
+  const maxAllowed = cart[index].stock;
+  if (qty > maxAllowed) {
+    alert(`⚠️ Only ${maxAllowed} units available for ${cart[index].name}.`);
+    qty = maxAllowed;
+  }
+
   cart[index].qty = qty;
   renderCart();
 }
 
-// Update discount
+// ✅ Update discount
 function updateDiscount(index, value) {
   let disc = parseFloat(value);
   if (isNaN(disc) || disc < 0) {
@@ -42,7 +53,7 @@ function updateDiscount(index, value) {
   renderCart();
 }
 
-// Render cart table
+// ✅ Render cart table
 function renderCart() {
   const tbody = document.getElementById('cart-body');
   const cartInput = document.getElementById('cart-input');
@@ -93,7 +104,7 @@ function renderCart() {
   }
 }
 
-// Product search
+// ✅ Product search with stock handling
 function searchProducts(term) {
   fetch(`/api/products/?q=${encodeURIComponent(term)}`)
     .then(res => res.json())
@@ -103,13 +114,14 @@ function searchProducts(term) {
 
       if (data.length === 1 && term.length >= 4) {
         const p = data[0];
-        const priceValue = Number(p.price); // ✅ expects 'price' field from backend
+        const priceValue = Number(p.price);
         if (!isNaN(priceValue) && priceValue > 0) {
           addToCart({
             product_id: p.id,
             name: p.name,
             price: priceValue,
-            discount: 0
+            discount: 0,
+            stock: p.stock  // ✅ include stock
           });
           document.getElementById('product-search').value = '';
           document.getElementById('product-search').focus();
@@ -123,13 +135,14 @@ function searchProducts(term) {
 
         const div = document.createElement('div');
         div.className = 'product-result';
-        div.textContent = `${product.name} – ${priceValue.toFixed(2)} PKR`;
+        div.textContent = `${product.name} – ${priceValue.toFixed(2)} PKR (Stock: ${product.stock})`;
         div.onclick = () => {
           addToCart({
             product_id: product.id,
             name: product.name,
             price: priceValue,
-            discount: 0
+            discount: 0,
+            stock: product.stock  // ✅ include stock
           });
           document.getElementById('product-search').value = '';
           document.getElementById('product-search').focus();
@@ -143,7 +156,7 @@ function searchProducts(term) {
     });
 }
 
-// DOM Ready
+// ✅ DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
   const searchBox = document.getElementById('product-search');
   if (searchBox) {
@@ -174,46 +187,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 💡 Optional: Cart sanity check before form submit
+  // 💡 Cart sanity check before form submit
   document.getElementById('pos-form')?.addEventListener('submit', e => {
-    const hasInvalid = cart.some(item => item.qty <= 0 || item.price <= 0);
+    const hasInvalid = cart.some(item => item.qty <= 0 || item.price <= 0 || item.qty > item.stock);
     if (hasInvalid) {
       e.preventDefault();
-      alert("🚫 Cart contains invalid items. Please check price and quantity.");
+      alert("🚫 Cart contains invalid or overstocked items. Please review quantities.");
     }
   });
 });
-/* Analytics integration and POS UI enhancement */
-/* Add this snippet to enable analytics tracking for completed sales */
 
+/* Optional Analytics Tracking */
 function sendAnalyticsEvent(eventName, eventData) {
-    fetch('/api/analytics/event/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event: eventName, data: eventData })
-    })
-    .then(response => response.json())
-    .then(data => console.log('Analytics event sent:', data))
-    .catch(error => console.error('Error sending analytics event:', error));
+  fetch('/api/analytics/event/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event: eventName, data: eventData })
+  })
+  .then(response => response.json())
+  .then(data => console.log('Analytics event sent:', data))
+  .catch(error => console.error('Error sending analytics event:', error));
 }
 
-// Enhance the POS sale completion: If a completeSale function exists, wrap it to include analytics tracking.
 if (typeof completeSale === 'function') {
-    var originalCompleteSale = completeSale;
-    completeSale = function() {
-        originalCompleteSale.apply(this, arguments);
-        // Capture sale value from a UI element (e.g., an element with id "sale-amount")
-        var saleValue = document.getElementById('sale-amount') ? parseFloat(document.getElementById('sale-amount').innerText) : 0;
-        sendAnalyticsEvent('sale_completed', { amount: saleValue });
-    };
+  var originalCompleteSale = completeSale;
+  completeSale = function() {
+    originalCompleteSale.apply(this, arguments);
+    var saleValue = document.getElementById('sale-amount') ? parseFloat(document.getElementById('sale-amount').innerText) : 0;
+    sendAnalyticsEvent('sale_completed', { amount: saleValue });
+  };
 } else {
-    // Alternatively, attach an event listener to a button with id "complete-sale" if completeSale is not defined.
-    var completeSaleButton = document.getElementById('complete-sale');
-    if (completeSaleButton) {
-        completeSaleButton.addEventListener('click', function() {
-            // You can include POS sale completion logic here if needed.
-            var saleValue = document.getElementById('sale-amount') ? parseFloat(document.getElementById('sale-amount').innerText) : 0;
-            sendAnalyticsEvent('sale_completed', { amount: saleValue });
-        });
-    }
+  var completeSaleButton = document.getElementById('complete-sale');
+  if (completeSaleButton) {
+    completeSaleButton.addEventListener('click', function() {
+      var saleValue = document.getElementById('sale-amount') ? parseFloat(document.getElementById('sale-amount').innerText) : 0;
+      sendAnalyticsEvent('sale_completed', { amount: saleValue });
+    });
+  }
 }
