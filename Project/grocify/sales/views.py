@@ -1,13 +1,19 @@
-import json, io, base64, datetime, treepoem
+import json
+import base64
+import datetime
+import treepoem
 from io import BytesIO
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+from django.contrib.admin.views.decorators import staff_member_required
 
 from inventory.models import InventoryItem, StockEntry, StockLedger, Product, Location
 from customers.models import Customer
@@ -16,28 +22,37 @@ from loyalty.utils import TIER_MULTIPLIERS
 from sales.models import SaleTransaction, SaleItem, Coupon
 from credit.models import CreditSale
 
+
+def get_selected_location(request):
+    loc = request.session.get('selected_location', 'all')
+    return None if loc == 'all' else int(loc)
+
+
 def safe_float(value, default=0.0):
     try:
         return float(str(value).strip())
     except (ValueError, TypeError):
         return default
 
+
 @login_required
 @transaction.atomic
 def process_sale(request):
     if request.method != 'POST':
-        return redirect('sales:pos_checkout')
+        return redirect('sales:index')
 
+    # Parse cart JSON
     try:
         cart = json.loads(request.POST.get('cart') or '[]')
     except json.JSONDecodeError:
         messages.error(request, "Invalid cart data.")
-        return redirect('sales:pos_checkout')
+        return redirect('sales:index')
 
     if not cart:
         messages.error(request, "🛒 Cart is empty.")
-        return redirect('sales:pos_checkout')
+        return redirect('sales:index')
 
+    # Payment & customer info
     payment_method  = request.POST.get('payment_method')
     amount_paid     = safe_float(request.POST.get('amount_paid'))
     discount_amount = safe_float(request.POST.get('discount_amount'))
@@ -46,58 +61,74 @@ def process_sale(request):
     points_used     = int(request.POST.get('points_used') or 0)
 
     walkin_customer = Customer.get_walkin_customer()
-    customer = Customer.objects.filter(id=customer_id).first() if customer_id else walkin_customer
+    customer = (
+        Customer.objects.filter(id=customer_id).first()
+        if customer_id else
+        walkin_customer
+    )
 
-    if payment_method == 'Credit' and (not customer_id or str(customer_id) == str(walkin_customer.id)):
+    if payment_method == 'Credit' and (not customer_id or customer_id == str(walkin_customer.id)):
         messages.error(request, "❌ Credit sales are not allowed for walk-in customers.")
-        return redirect('sales:pos_checkout')
+        return redirect('sales:index')
 
-    profile = getattr(request.user, 'userprofile', None)
-    location = profile.default_location if profile and profile.default_location else Location.objects.first()
+    # Determine store location
+    profile = request.user.userprofile
+    sel = get_selected_location(request)
+    if sel is not None:
+        try:
+            location = Location.objects.get(id=sel)
+        except Location.DoesNotExist:
+            messages.error(request, "Selected store not found.")
+            return redirect('sales:index')
+    else:
+        location = profile.default_location or Location.objects.first()
 
+    # Validate cart items
     subtotal = 0.0
     validated_cart = []
-
     for item in cart:
         price = safe_float(item.get('price'))
         qty = safe_float(item.get('qty'))
         if price <= 0 or qty <= 0:
-            messages.error(request, f"🚫 Invalid price or quantity for '{item.get('name', 'Unknown')}'.")
-            return redirect('sales:pos_checkout')
+            messages.error(request, f"🚫 Invalid price or quantity for '{item.get('name','Unknown')}'.")
+            return redirect('sales:index')
         subtotal += price * qty
         validated_cart.append(item)
 
     if subtotal <= 0:
         messages.error(request, "🚫 Subtotal is zero.")
-        return redirect('sales:pos_checkout')
+        return redirect('sales:index')
 
+    # Apply coupon if valid
     valid_coupon = None
     if coupon_code:
         try:
             coupon = Coupon.objects.get(code=coupon_code, is_active=True)
             if coupon.is_valid() and subtotal >= float(coupon.minimum_amount):
                 valid_coupon = coupon
-                discount_amount += (
-                    float(coupon.discount_value)
-                    if coupon.discount_type == 'fixed'
-                    else subtotal * float(coupon.discount_value) / 100
-                )
+                if coupon.discount_type == 'fixed':
+                    discount_amount += float(coupon.discount_value)
+                else:
+                    discount_amount += subtotal * float(coupon.discount_value) / 100
                 coupon.used_count += 1
                 coupon.save()
         except Coupon.DoesNotExist:
             messages.warning(request, f"⚠️ Coupon '{coupon_code}' is invalid or expired.")
 
+    # Calculate points usage
     max_usable_points = 0
     if customer.id != walkin_customer.id:
         max_usable_points = min(points_used, customer.points, subtotal - discount_amount)
 
+    # Final totals
     total = max(subtotal - discount_amount - max_usable_points, 0)
     change_due = amount_paid - total if payment_method != 'Credit' else 0
 
     if payment_method != 'Credit' and amount_paid < total:
         messages.error(request, "🚫 Amount paid is less than total.")
-        return redirect('sales:pos_checkout')
+        return redirect('sales:index')
 
+    # Create SaleTransaction
     now = datetime.datetime.now()
     tx = SaleTransaction(
         cashier=request.user,
@@ -116,6 +147,7 @@ def process_sale(request):
     tx.points_earned = 0
     tx.save()
 
+    # Calculate and record points
     tier_name = customer.tier.name if customer.tier else None
     multiplier = TIER_MULTIPLIERS.get(tier_name, 1.0)
     total_points_earned = 0
@@ -125,17 +157,19 @@ def process_sale(request):
         quantity = safe_float(item['qty'])
         price = safe_float(item['price'])
 
-        points_earned = 0
-
         inventory, _ = InventoryItem.objects.get_or_create(
             product=product,
             location=location,
             defaults={'qty_on_hand': 0}
         )
         if inventory.qty_on_hand < quantity:
-            raise ValidationError(f"❌ Not enough stock for {product.name}.")
+            messages.error(
+                request,
+                f"❌ Not enough stock for '{product.name}'. Only {inventory.qty_on_hand} left."
+    )
+            return redirect('sales:index')
 
-        before = inventory.qty_on_hand
+        before_qty = inventory.qty_on_hand
         inventory.qty_on_hand -= quantity
         inventory.save()
 
@@ -150,12 +184,13 @@ def process_sale(request):
         StockLedger.objects.create(
             product=product,
             location=location,
-            quantity_before=before,
+            quantity_before=before_qty,
             quantity_changed=-quantity,
             quantity_after=inventory.qty_on_hand,
             related_entry=entry
         )
 
+        points_earned = 0
         if customer.id != walkin_customer.id:
             base_points = product.points_per_unit * quantity
             points_earned = int(base_points * multiplier)
@@ -172,9 +207,9 @@ def process_sale(request):
     tx.points_earned = total_points_earned
     tx.save(update_fields=['points_earned'])
 
+    # Update loyalty profile
     if customer.id != walkin_customer.id:
         loyalty_profile, _ = LoyaltyProfile.objects.get_or_create(customer=customer)
-
         if max_usable_points > 0:
             loyalty_profile.points -= max_usable_points
             PointTransaction.objects.create(
@@ -184,19 +219,18 @@ def process_sale(request):
                 source=f"Sale #{tx.invoice_number}",
                 note="Points redeemed on sale"
             )
-
         loyalty_profile.points += total_points_earned
         loyalty_profile.lifetime_points += total_points_earned
         loyalty_profile.save()
-
         PointTransaction.objects.create(
             profile=loyalty_profile,
             points=total_points_earned,
             transaction_type='earned',
             source=f"Sale #{tx.invoice_number}",
-            note="Auto‐awarded from completed sale"
+            note="Auto-awarded from completed sale"
         )
 
+    # Handle credit sale
     if payment_method == 'Credit':
         CreditSale.objects.create(
             customer=customer,
@@ -208,23 +242,49 @@ def process_sale(request):
     messages.success(request, f"✅ Sale completed. Invoice #{tx.invoice_number}")
     return redirect('sales:receipt', tx.id)
 
+
 @login_required
 def pos_checkout(request):
     customers = Customer.objects.filter(is_active=True).order_by('name')
     customer_points = {str(c.id): c.points for c in customers}
+    loc = get_selected_location(request)
+
+    products = Product.objects.all()
+    if loc:
+        products = products.filter(
+            inventoryitem__location_id=loc,
+            inventoryitem__qty_on_hand__gt=0
+        )
+
+    try:
+        current_location = Location.objects.get(id=loc) if loc else None
+    except Location.DoesNotExist:
+        current_location = None
+
     return render(request, 'sales/pos_checkout.html', {
         'customers': customers,
-        'customer_points': json.dumps(customer_points)
+        'customer_points': json.dumps(customer_points),
+        'current_location': current_location,
     })
 
+
+@login_required
 def product_search_api(request):
     query = request.GET.get('q', '')
-    products = Product.objects.filter(Q(name__icontains=query) | Q(sku__icontains=query))
+    qs = Product.objects.filter(Q(name__icontains=query) | Q(sku__icontains=query))
+    loc = get_selected_location(request)
+    if loc:
+        qs = qs.filter(
+            inventoryitem__location_id=loc,
+            inventoryitem__qty_on_hand__gt=0
+        )
+
     results = [
         {'id': p.id, 'name': p.name, 'price': float(p.selling_price_with_tax or 0.0)}
-        for p in products
+        for p in qs
     ]
     return JsonResponse(results, safe=False)
+
 
 @login_required
 def receipt_view(request, id):
@@ -233,14 +293,17 @@ def receipt_view(request, id):
     items = transaction.items.all()
 
     for item in items:
-        item.total_amount = float(item.quantity) * float(item.price_at_sale) - float(item.discount_amount)
+        item.total_amount = (
+            float(item.quantity) * float(item.price_at_sale)
+            - float(item.discount_amount)
+        )
 
     total_points_earned = sum(item.points_earned for item in items)
     points_redeemed = transaction.points_redeemed or 0
     remaining_points = transaction.customer.points
     before_points_total = transaction.total_amount + transaction.points_redeemed
-    coupon_description = getattr(transaction, 'coupon_description', transaction.coupon_code)
-    coupon_description = ""
+
+    coupon_description = ''
     if transaction.coupon_code:
         try:
             coupon = Coupon.objects.get(code=transaction.coupon_code)
@@ -266,5 +329,45 @@ def receipt_view(request, id):
         'before_points_total': before_points_total,
         'coupon_description': coupon_description,
         'walkin_customer_id': walkin_customer.id,
-        'barcode_uri': barcode_uri  # 👈 Pass it to your template
+        'barcode_uri': barcode_uri,
+    })
+
+
+@require_POST
+@login_required
+def set_location(request):
+    """
+    Store the chosen location in session (or 'all').
+    """
+    data = json.loads(request.body or '{}')
+    loc_id = data.get('location_id')
+    profile = request.user.userprofile
+
+    if loc_id != 'all' and not (
+        request.user.is_superuser
+        or profile.locations.filter(id=loc_id).exists()
+    ):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+
+    request.session['selected_location'] = loc_id
+    return JsonResponse({'ok': True})
+
+
+@staff_member_required
+def chain_dashboard(request):
+    """
+    Chain-wide overview of sales per location.
+    """
+    totals = SaleTransaction.objects.aggregate(
+        total_sales=Sum('total_amount'),
+        tx_count=Count('id')
+    )
+    by_store = (
+        SaleTransaction.objects
+        .values('location__name')
+        .annotate(store_total=Sum('total_amount'), tx_count=Count('id'))
+    )
+    return render(request, 'sales/chain_dashboard.html', {
+        'total': totals,
+        'by_store': by_store,
     })

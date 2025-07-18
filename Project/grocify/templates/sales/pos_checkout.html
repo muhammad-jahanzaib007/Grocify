@@ -15,8 +15,10 @@
 {% endblock %}
 
 {% block content %}
+<div class="mb-2">
+          Viewing store: <strong>{{ current_location.name|default:"All Stores" }}</strong>
+    </div>
 <div class="pos-wrapper d-flex flex-wrap gap-4">
-
   <!-- Sidebar Product Search -->
   <div class="pos-left col-12 col-lg-4">
     <div class="product-search-panel">
