@@ -4,111 +4,40 @@
 <head>
   <meta charset="UTF-8" />
   <title>{% block title %}Grocify{% endblock %}</title>
-
-  <!-- Google Fonts: Nunito -->
   <link
     href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap"
     rel="stylesheet"
   />
-
-  <!-- Bootstrap 5 CSS -->
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
     rel="stylesheet"
     crossorigin="anonymous"
   />
-
-  <!-- Core CSS -->
   <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
   <link rel="stylesheet" href="{% static 'css/pos.css' %}" />
   {% block extra_css %}{% endblock %}
 
-  <style>
-    :root {
-      --sidebar-bg: #2c3e50;
-      --header-bg: #34495e;
-      --page-bg: #ecf0f1;
-      --accent: #1abc9c;
-      --text: #2c3e50;
-    }
-    body {
-      margin: 0;
-      font-family: 'Nunito', sans-serif;
-      background: var(--page-bg);
-      color: var(--text);
-    }
-    h1, h2, h3, h4, h5, h6,
-    .btn, .form-control {
-      font-family: 'Nunito', sans-serif;
-    }
-    .sidebar {
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      width: 70px;
-      background-color: var(--sidebar-bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1rem 0;
-      z-index: 1000;
-    }
-    .sidebar a {
-      display: block;
-      color: #bdc3c7;
-      font-size: 1.5rem;
-      text-decoration: none;
-      margin: 1.5rem 0;
-    }
-    .sidebar a:hover,
-    .sidebar a.active {
-      color: var(--accent);
-    }
-    .header-bar {
-      height: 60px;
-      background-color: var(--header-bg);
-      color: white;
-      display: flex;
-      align-items: center;
-      padding: 0 1.5rem;
-      margin-left: 70px;
-      font-weight: 500;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .main-content {
-      margin-left: 70px;
-      padding: 2rem;
-    }
-    .receipt-id {
-      font-size: 0.85rem;
-      color: #bdc3c7;
-      font-style: italic;
-    }
-    @media (max-width: 768px) {
-      .main-content {
-        padding: 1.25rem;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="{% static 'css/layout.css' %}" />
 </head>
 
 <body>
-  <!-- Sidebar -->
   <nav class="sidebar">
     <a href="{% url 'sales:index' %}" title="Sales">🛒</a>
-    <a href="{% url 'inventory:index' %}" title="Inventory">📦</a>
+    <a href="{% url 'purchases:index' %}" title="Purchases">🛍️</a>
+    <a href="{% url 'inventory:stock_dashboard' %}" title="Inventory">📦</a>
     <a href="{% url 'customers:index' %}" title="Customers">👥</a>
     <a href="{% url 'loyalty:index' %}" title="Loyalty">⭐</a>
     <a href="{% url 'expenses:index' %}" title="Expenses">💸</a>
-    <a href="{% url 'reports:index' %}" title="Reports">📊</a>
+    <a href="{% url 'reports:index' %}" title="Analytics">📈</a>
     <a href="{% url 'sales:chain_dashboard' %}" title="Chain View">🌐</a>
   </nav>
 
-  <!-- Header -->
   <header class="header-bar">
+    <button class="btn btn-sm btn-light me-3 d-md-none" id="sidebarToggle">☰</button>
     <div>{% block header %}Welcome to Grocify{% endblock %}</div>
     <div class="receipt-id" id="receipt-id"></div>
 
-    <!-- Store Switcher -->
+
     <div class="d-flex align-items-center ms-auto">
       <label for="location-switcher" class="text-white mb-0 me-2">Store:</label>
       <select id="location-switcher" class="form-select form-select-sm w-auto">
@@ -122,19 +51,26 @@
           </option>
         {% endfor %}
       </select>
+      <button class="btn btn-sm btn-light ms-3" id="themeToggle">🌙</button>
     </div>
   </header>
 
-  <!-- Page Body -->
   <main class="main-content">
+    {% block breadcrumbs %}{% endblock %}
+    {% block page_title %}<h1>{{ page_title }}</h1>{% endblock %}
+    {% if messages %}
+      <div class="alert-container">
+        {% for msg in messages %}
+          <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Location Switcher Handler -->
   <script>
     document.getElementById('location-switcher')?.addEventListener('change', function() {
       fetch("{% url 'sales:set_location' %}", {
@@ -149,7 +85,37 @@
       .catch(console.error);
     });
   </script>
+  <script>
+    document.getElementById('sidebarToggle')?.addEventListener('click', function() {
+      document.querySelector('.sidebar')?.classList.toggle('collapsed');
+    });
+  </script>
+  <script>
+    (function() {
+      const toggle = document.getElementById('themeToggle');
+      const root = document.documentElement;
+      const current = localStorage.getItem('theme');
+      if (current === 'dark') root.classList.add('dark-mode');
+      if (toggle) {
+        toggle.textContent = root.classList.contains('dark-mode') ? '☀️' : '🌙';
+        toggle.addEventListener('click', function() {
+          if (root.classList.contains('dark-mode')) {
+            root.classList.remove('dark-mode');
+            localStorage.setItem('theme','light');
+            this.textContent = '🌙';
+          } else {
+            root.classList.add('dark-mode');
+            localStorage.setItem('theme','dark');
+            this.textContent = '☀️';
+          }
+        });
+      }
+    })();
+  </script>
 
   {% block extra_js %}{% endblock %}
+  <footer class="footer text-center py-3">
+    {% block footer %}© {{ now.year }} Grocify{% endblock %}
+  </footer>
 </body>
 </html>

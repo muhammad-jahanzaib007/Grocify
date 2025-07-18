@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Expense Detail{% endblock %}
+{% block page_title %}Expense Detail{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'expenses:expense_list' %}">Expenses</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Detail</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Expense #{{ expense.id }}</h2>
+  <dl class="row">
+    <dt class="col-sm-3">Date</dt>
+    <dd class="col-sm-9">{{ expense.date }}</dd>
+
+    <dt class="col-sm-3">Category</dt>
+    <dd class="col-sm-9">{{ expense.get_category_display }}</dd>
+
+    <dt class="col-sm-3">Description</dt>
+    <dd class="col-sm-9">{{ expense.description }}</dd>
+
+    <dt class="col-sm-3">Vendor</dt>
+    <dd class="col-sm-9">{{ expense.vendor }}</dd>
+
+    <dt class="col-sm-3">Amount</dt>
+    <dd class="col-sm-9">{{ expense.amount }}</dd>
+
+    <dt class="col-sm-3">Location</dt>
+    <dd class="col-sm-9">{{ expense.location.name }}</dd>
+
+    <dt class="col-sm-3">Receipt Number</dt>
+    <dd class="col-sm-9">{{ expense.receipt_number }}</dd>
+
+    <dt class="col-sm-3">Notes</dt>
+    <dd class="col-sm-9">{{ expense.notes }}</dd>
+
+    <dt class="col-sm-3">Created By</dt>
+    <dd class="col-sm-9">{{ expense.created_by.username }}</dd>
+
+    <dt class="col-sm-3">Created At</dt>
+    <dd class="col-sm-9">{{ expense.created_at }}</dd>
+  </dl>
+  <div class="mt-3">
+    <a href="{% url 'expenses:expense_update' expense.id %}" class="btn btn-secondary">Edit</a>
+    <a href="{% url 'expenses:expense_delete' expense.id %}" class="btn btn-danger">Delete</a>
+    <a href="{% url 'expenses:expense_list' %}" class="btn btn-link">Back to list</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Orders{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:admin_dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Purchase Orders</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block page_title %}
+<h1>Purchase Orders</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex mb-3">
+    <h2 class="me-auto">Purchase Orders</h2>
+    <a href="{% url 'purchases:order_create' %}" class="btn btn-primary">New Order</a>
+  </div>
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Supplier</th>
+        <th>Location</th>
+        <th>Date Ordered</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in purchase_orders %}
+      <tr>
+        <td>{{ order.id }}</td>
+        <td>{{ order.supplier.name }}</td>
+        <td>{{ order.location.name }}</td>
+        <td>{{ order.date_ordered }}</td>
+        <td>{{ order.status }}</td>
+        <td>
+          <a href="{% url 'purchases:order_detail' order.id %}" class="btn btn-sm btn-outline-primary">View</a>
+          <a href="{% url 'purchases:order_update' order.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+          <a href="{% url 'purchases:order_delete' order.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center">No purchase orders found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

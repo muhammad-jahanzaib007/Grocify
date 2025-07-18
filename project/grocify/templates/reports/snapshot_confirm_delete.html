@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Snapshot #{{ object.id }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'reports:snapshot_list' %}">Snapshots</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Delete</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block page_title %}
+<h1>Delete Snapshot #{{ object.id }}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="alert alert-danger">
+    Are you sure you want to delete Snapshot #{{ object.id }}?
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Confirm Delete</button>
+    <a href="{% url 'reports:snapshot_detail' object.id %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

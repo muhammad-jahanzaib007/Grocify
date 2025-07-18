@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Order #{{ purchase_order.id }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'purchases:order_list' %}">Purchases</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Order #{{ purchase_order.id }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block page_title %}
+<h1>Order #{{ purchase_order.id }}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5>Supplier:</h5> {{ purchase_order.supplier.name }}
+      <h5>Location:</h5> {{ purchase_order.location.name }}
+      <h5>Date Ordered:</h5> {{ purchase_order.date_ordered }}
+      <h5>Status:</h5> {{ purchase_order.status }}
+      {% if purchase_order.notes %}
+        <h5>Notes:</h5>
+        <p>{{ purchase_order.notes }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <h4>Items</h4>
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Cost Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in purchase_order.items.all %}
+      <tr>
+        <td>{{ item.product.name }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.cost_price }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="3" class="text-center">No items found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <a href="{% url 'purchases:item_create' %}?purchase_order={{ purchase_order.id }}" class="btn btn-sm btn-primary">Add Item</a>
+
+  <h4 class="mt-4">Receipts</h4>
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>ID</th>
+        <th>Received By</th>
+        <th>Received At</th>
+        <th>Notes</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for receipt in purchase_order.receipts.all %}
+      <tr>
+        <td>{{ receipt.id }}</td>
+        <td>{{ receipt.received_by.username }}</td>
+        <td>{{ receipt.received_at }}</td>
+        <td>{{ receipt.notes }}</td>
+        <td>
+          <a href="{% url 'purchases:receipt_detail' receipt.id %}" class="btn btn-sm btn-outline-primary">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="text-center">No receipts found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <a href="{% url 'purchases:receipt_create' %}?purchase_order={{ purchase_order.id }}" class="btn btn-sm btn-success">Add Receipt</a>
+</div>
+{% endblock %}

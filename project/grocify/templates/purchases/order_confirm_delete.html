@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Purchase Order #{{ object.id }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'purchases:order_list' %}">Purchases</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Delete Order #{{ object.id }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block page_title %}
+<h1>Delete Purchase Order #{{ object.id }}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="alert alert-danger">
+    Are you sure you want to delete Purchase Order #{{ object.id }}?
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Confirm Delete</button>
+    <a href="{% url 'purchases:order_detail' object.id %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

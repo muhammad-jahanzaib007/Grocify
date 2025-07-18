@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Snapshot Detail{% endblock %}
+{% block page_title %}Snapshot Detail{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'reports:snapshot_list' %}">Snapshots</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Detail</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Snapshot #{{ snapshot.id }}</h2>
+  <dl class="row">
+    <dt class="col-sm-3">Product</dt>
+    <dd class="col-sm-9">{{ snapshot.product.name }}</dd>
+
+    <dt class="col-sm-3">Damage Type</dt>
+    <dd class="col-sm-9">{{ snapshot.get_damage_type_display }}</dd>
+
+    <dt class="col-sm-3">Quantity</dt>
+    <dd class="col-sm-9">{{ snapshot.quantity }}</dd>
+
+    <dt class="col-sm-3">Value Lost</dt>
+    <dd class="col-sm-9">{{ snapshot.value_lost }}</dd>
+
+    <dt class="col-sm-3">Reported At</dt>
+    <dd class="col-sm-9">{{ snapshot.reported_at }}</dd>
+
+    <dt class="col-sm-3">Reported By</dt>
+    <dd class="col-sm-9">{{ snapshot.reported_by }}</dd>
+
+    <dt class="col-sm-3">Location</dt>
+    <dd class="col-sm-9">{{ snapshot.location.name }}</dd>
+
+    <dt class="col-sm-3">Related Purchase</dt>
+    <dd class="col-sm-9">
+      {% if snapshot.related_purchase %}
+        <a href="{% url 'purchases:order_detail' snapshot.related_purchase.id %}">Order {{ snapshot.related_purchase.id }}</a>
+      {% else %}
+        N/A
+      {% endif %}
+    </dd>
+  </dl>
+  <div class="mt-3">
+    <a href="{% url 'reports:snapshot_update' snapshot.id %}" class="btn btn-secondary">Edit</a>
+    <a href="{% url 'reports:snapshot_delete' snapshot.id %}" class="btn btn-danger">Delete</a>
+    <a href="{% url 'reports:snapshot_list' %}" class="btn btn-link">Back to list</a>
+  </div>
+</div>
+{% endblock %}

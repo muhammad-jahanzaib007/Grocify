@@ -1,0 +1,75 @@
+:root {
+  --sidebar-bg: #2c3e50;
+  --header-bg: #34495e;
+  --page-bg: #ecf0f1;
+  --accent: #1abc9c;
+  --text: #2c3e50;
+}
+body {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  background: var(--page-bg);
+  color: var(--text);
+}
+h1, h2, h3, h4, h5, h6,
+.btn, .form-control {
+  font-family: 'Nunito', sans-serif;
+}
+.sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 70px;
+  background-color: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0;
+  z-index: 1000;
+}
+.sidebar a {
+  display: block;
+  color: #bdc3c7;
+  font-size: 1.5rem;
+  text-decoration: none;
+  margin: 1.5rem 0;
+}
+.sidebar a:hover,
+.sidebar a.active {
+  color: var(--accent);
+}
+.header-bar {
+  height: 60px;
+  background-color: var(--header-bg);
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  margin-left: 70px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.main-content {
+  margin-left: 70px;
+  padding: 2rem;
+}
+.receipt-id {
+  font-size: 0.85rem;
+  color: #bdc3c7;
+  font-style: italic;
+}
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1.25rem;
+  }
+}
+/* Collapsible sidebar */
+.sidebar.collapsed {
+  width: 0;
+  overflow: hidden;
+}
+/* Dark mode */
+:root.dark-mode {
+  --sidebar-bg: #1e272e;
+  --header-bg: #2d3436;
+  --page-bg: #dfe6e9;
+}

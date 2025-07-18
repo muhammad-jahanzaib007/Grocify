@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Damage Report Snapshots{% endblock %}
+{% block page_title %}Damage Report Snapshots{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Snapshots</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex mb-3">
+    <h2 class="me-auto">Damage Report Snapshots</h2>
+    <a href="{% url 'reports:snapshot_create' %}" class="btn btn-primary">New Snapshot</a>
+  </div>
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Product</th>
+        <th>Damage Type</th>
+        <th>Quantity</th>
+        <th>Location</th>
+        <th>Reported At</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for snapshot in snapshots %}
+      <tr>
+        <td>{{ snapshot.id }}</td>
+        <td>{{ snapshot.product.name }}</td>
+        <td>{{ snapshot.get_damage_type_display }}</td>
+        <td>{{ snapshot.quantity }}</td>
+        <td>{{ snapshot.location.name }}</td>
+        <td>{{ snapshot.reported_at }}</td>
+        <td>
+          <a href="{% url 'reports:snapshot_detail' snapshot.id %}" class="btn btn-sm btn-outline-primary">View</a>
+          <a href="{% url 'reports:snapshot_update' snapshot.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+          <a href="{% url 'reports:snapshot_delete' snapshot.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="text-center">No snapshots found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

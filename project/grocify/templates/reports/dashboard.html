@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Reports Dashboard{% endblock %}
+{% block page_title %}Reports Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">📊 Reports Dashboard</h2>
+  <div class="row g-3">
+    {% for summary in damage_summary %}
+    <div class="col-md-4">
+      <div class="card text-bg-info">
+        <div class="card-body">
+          <h5>{{ summary.damage_type|title }}</h5>
+          <h6 class="card-subtitle mb-2">Incidents: {{ summary.incidents }}</h6>
+          <p>Total Lost: {{ summary.total_lost }}</p>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p>No damage reports available.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

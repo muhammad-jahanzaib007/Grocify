@@ -2,38 +2,44 @@
 
 {% block title %}Loyalty Dashboard{% endblock %}
 
+{% block page_title %}
+<h2>Loyalty Dashboard</h2>
+{% endblock %}
+
 {% block content %}
-<div class="loyalty-dashboard">
-  <h2>Loyalty Dashboard</h2>
-
-  <div class="profile-card">
-    <h3>{{ profile.customer.name }}</h3>
-    <p><strong>Phone:</strong> {{ profile.customer.phone }}</p>
-    <p><strong>Joined:</strong> {{ profile.customer.joined_at|date:"F d, Y" }}</p>
-  </div>
-
-  <div class="stats">
-    <div class="stat">
-      <h4>Points</h4>
-      <p>{{ profile.points }}</p>
-    </div>
-    <div class="stat">
-      <h4>Lifetime Points</h4>
-      <p>{{ profile.lifetime_points }}</p>
-    </div>
-    <div class="stat">
-      <h4>Tier</h4>
-      <span class="tier-badge" style="color: {{ profile.tier.badge_color }}">{{ profile.tier.name }}</span>
-      <p>{{ profile.tier.discount_percent }}% Discount</p>
-    </div>
-  </div>
-
-  <hr>
-
-  <h4>Actions</h4>
-  <ul>
-    <li><a href="{% url 'loyalty:history' %}?customer_id={{ profile.customer.id }}">View Point History</a></li>
-    <li><a href="{% url 'loyalty:redeem' %}?customer_id={{ profile.customer.id }}">Redeem Rewards</a></li>
-  </ul>
+<div class="table-responsive">
+  <table class="table table-bordered table-striped align-middle bg-white">
+    <thead class="table-dark">
+      <tr>
+        <th>Customer</th>
+        <th>Phone</th>
+        <th>Points</th>
+        <th>Lifetime Points</th>
+        <th>Tier</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for profile in profiles %}
+      <tr>
+        <td>{{ profile.customer.name }}</td>
+        <td>{{ profile.customer.phone }}</td>
+        <td>{{ profile.points }}</td>
+        <td>{{ profile.lifetime_points }}</td>
+        <td>
+          <span class="tier-badge" style="color: {{ profile.tier.badge_color }}">{{ profile.tier.name }}</span>
+        </td>
+        <td>
+          <a href="{% url 'loyalty:history' %}?customer_id={{ profile.customer.id }}" class="btn btn-sm btn-outline-secondary">History</a>
+          <a href="{% url 'loyalty:redeem' %}?customer_id={{ profile.customer.id }}" class="btn btn-sm btn-outline-success">Redeem</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-muted">No loyalty profiles found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}

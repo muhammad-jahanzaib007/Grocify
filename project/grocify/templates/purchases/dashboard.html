@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Purchases Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">🛍️ Purchases Dashboard</h2>
+  <!-- Summary Cards -->
+  <div class="row g-3">
+    <div class="col-md-3">
+      <div class="card text-bg-primary">
+        <div class="card-body">
+          <h5>Total Orders</h5>
+          <h3>{{ total_orders }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-warning">
+        <div class="card-body">
+          <h5>Pending Orders</h5>
+          <h3>{{ pending_orders }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-success">
+        <div class="card-body">
+          <h5>Received Orders</h5>
+          <h3>{{ received_orders }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-danger">
+        <div class="card-body">
+          <h5>Cancelled Orders</h5>
+          <h3>{{ cancelled_orders }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Recent Orders Table -->
+  <div class="mt-5">
+    <h4 class="mb-3">Recent Orders</h4>
+    <table class="table table-bordered table-hover">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Supplier</th>
+          <th>Location</th>
+          <th>Date Ordered</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in recent_orders %}
+        <tr>
+          <td>{{ order.id }}</td>
+          <td>{{ order.supplier.name }}</td>
+          <td>{{ order.location.name }}</td>
+          <td>{{ order.date_ordered }}</td>
+          <td>{{ order.status }}</td>
+          <td>
+            <a href="{% url 'purchases:order_detail' order.id %}" class="btn btn-sm btn-outline-primary">View</a>
+            <a href="{% url 'purchases:order_update' order.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <a href="{% url 'purchases:order_delete' order.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center">No orders found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

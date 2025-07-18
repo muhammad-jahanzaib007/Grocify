@@ -85,7 +85,7 @@ def edit_product(request, product_id):
 
 # MANUAL ADJUSTMENT
 @login_required
-def manual_stock_adjustment(request):
+def manual_stock_adjustment(request, item_id=None):
     if request.method == 'POST':
         form = StockAdjustmentForm(request.POST)
         if form.is_valid():
@@ -133,7 +133,11 @@ def manual_stock_adjustment(request):
 
             return redirect('inventory:stock_dashboard')
     else:
-        form = StockAdjustmentForm()
+        if item_id:
+            item = get_object_or_404(InventoryItem, id=item_id)
+            form = StockAdjustmentForm(initial={'product': item.product, 'location': item.location})
+        else:
+            form = StockAdjustmentForm()
 
     return render(request, 'inventory/manual_adjustment.html', {
         'form': form,

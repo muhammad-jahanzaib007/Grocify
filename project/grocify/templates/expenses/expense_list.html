@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Expenses{% endblock %}
+{% block page_title %}Expenses{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Expenses</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex mb-3">
+    <h2 class="me-auto">Expenses</h2>
+    <a href="{% url 'expenses:expense_create' %}" class="btn btn-primary">New Expense</a>
+  </div>
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Date</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Vendor</th>
+        <th>Amount</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for expense in expenses %}
+      <tr>
+        <td>{{ expense.id }}</td>
+        <td>{{ expense.date }}</td>
+        <td>{{ expense.get_category_display }}</td>
+        <td>{{ expense.description }}</td>
+        <td>{{ expense.vendor }}</td>
+        <td>{{ expense.amount }}</td>
+        <td>
+          <a href="{% url 'expenses:expense_detail' expense.id %}" class="btn btn-sm btn-outline-primary">View</a>
+          <a href="{% url 'expenses:expense_update' expense.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+          <a href="{% url 'expenses:expense_delete' expense.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="text-center">No expenses found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

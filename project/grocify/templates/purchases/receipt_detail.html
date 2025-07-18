@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Receipt #{{ purchase_receipt.id }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'purchases:order_list' %}">Purchases</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'purchases:order_detail' purchase_receipt.purchase_order.id %}">Order #{{ purchase_receipt.purchase_order.id }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Receipt #{{ purchase_receipt.id }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block page_title %}
+<h1>Receipt #{{ purchase_receipt.id }}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5>Order:</h5> <a href="{% url 'purchases:order_detail' purchase_receipt.purchase_order.id %}">#{{ purchase_receipt.purchase_order.id }}</a>
+      <h5>Received By:</h5> {{ purchase_receipt.received_by.username }}
+      <h5>Received At:</h5> {{ purchase_receipt.received_at }}
+      {% if purchase_receipt.notes %}
+        <h5>Notes:</h5>
+        <p>{{ purchase_receipt.notes }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <h4>Received Items</h4>
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>Product</th>
+        <th>Qty Received</th>
+        <th>Qty Damaged</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in purchase_receipt.items.all %}
+      <tr>
+        <td>{{ item.purchase_item.product.name }}</td>
+        <td>{{ item.quantity_received }}</td>
+        <td>{{ item.quantity_damaged }}</td>
+        <td>{{ item.notes }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="text-center">No items found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

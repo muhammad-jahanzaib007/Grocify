@@ -21,6 +21,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('dashboard.urls', namespace='dashboard')),
     path('pos/', include('sales.urls', namespace='sales')),
+    path('purchases/', include('purchases.urls', namespace='purchases')),
     path('inventory/', include('inventory.urls', namespace='inventory')),
     path('expenses/', include('expenses.urls', namespace='expenses')),
     path('customers/', include('customers.urls', namespace='customers')),
@@ -29,5 +30,5 @@ urlpatterns = [
     path('reports/', include('analytics.urls', namespace='reports')),
     path('api/', include('api.urls', namespace='api')),
     path('settings/', include('settings.urls', namespace='settings')),
-    
+    path('users/', include('users.urls', namespace='users')),
 ]
