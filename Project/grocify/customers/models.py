@@ -1,10 +1,15 @@
 from decimal import Decimal
 from django.db import models
+from django.core.validators import RegexValidator
 from loyalty.models import LoyaltyTier  # Correct import from loyalty app
 
 class Customer(models.Model):
     name = models.CharField(max_length=100)
-    phone = models.CharField(max_length=20, unique=True)
+    phone = models.CharField(
+        max_length=20, 
+        unique=True,
+        validators=[RegexValidator(r'^\+?1?\d{9,15}$', 'Invalid phone number format')]
+    )
     email = models.EmailField(blank=True)
     address = models.TextField(blank=True)
     outstanding_balance = models.DecimalField(

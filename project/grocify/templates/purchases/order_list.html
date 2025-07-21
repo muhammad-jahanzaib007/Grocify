@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load table_helpers %}
 
 {% block title %}Purchase Orders{% endblock %}
 
@@ -11,47 +12,176 @@
 </nav>
 {% endblock %}
 
-{% block page_title %}
-<h1>Purchase Orders</h1>
-{% endblock %}
+{% block page_title %}Purchase Orders{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="d-flex mb-3">
-    <h2 class="me-auto">Purchase Orders</h2>
-    <a href="{% url 'purchases:order_create' %}" class="btn btn-primary">New Order</a>
+<div class="data-table-container">
+  <!-- Table Header with Actions -->
+  <div class="data-table-header">
+    <div class="table-title-section">
+      <h2 class="table-title" id="purchase-orders-table-title">
+        <i class="fas fa-table me-2" aria-hidden="true"></i>
+        Purchase Orders
+      </h2>
+      <p class="table-description text-muted">Manage and track all purchase orders from suppliers</p>
+    </div>
+    
+    <div class="table-actions">
+      <div class="table-search">
+        <label for="purchase-orders-table-search" class="visually-hidden">Search Purchase Orders</label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="fas fa-search" aria-hidden="true"></i>
+          </span>
+          <input type="text" 
+                 class="form-control" 
+                 id="purchase-orders-table-search"
+                 placeholder="Search orders..."
+                 aria-describedby="purchase-orders-table-search-help">
+        </div>
+        <div id="purchase-orders-table-search-help" class="visually-hidden">
+          Search across suppliers, locations, and order details. Results update as you type.
+        </div>
+      </div>
+      
+      <a href="{% url 'purchases:order_create' %}" 
+         class="btn btn-primary"
+         aria-label="Create New Purchase Order">
+        <i class="fas fa-plus me-2" aria-hidden="true"></i>
+        New Order
+      </a>
+      
+      <button type="button" 
+              class="btn btn-outline-secondary"
+              id="purchase-orders-table-export"
+              aria-label="Export table data">
+        <i class="fas fa-download me-2" aria-hidden="true"></i>
+        Export
+      </button>
+    </div>
   </div>
-  <table class="table table-bordered table-hover">
-    <thead class="table-light">
-      <tr>
-        <th>#</th>
-        <th>Supplier</th>
-        <th>Location</th>
-        <th>Date Ordered</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for order in purchase_orders %}
-      <tr>
-        <td>{{ order.id }}</td>
-        <td>{{ order.supplier.name }}</td>
-        <td>{{ order.location.name }}</td>
-        <td>{{ order.date_ordered }}</td>
-        <td>{{ order.status }}</td>
-        <td>
-          <a href="{% url 'purchases:order_detail' order.id %}" class="btn btn-sm btn-outline-primary">View</a>
-          <a href="{% url 'purchases:order_update' order.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
-          <a href="{% url 'purchases:order_delete' order.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6" class="text-center">No purchase orders found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+  <!-- Table Container with Responsive Wrapper -->
+  <div class="table-responsive">
+    <table class="table grocify-table" 
+           id="purchase-orders-table"
+           role="table"
+           aria-labelledby="purchase-orders-table-title"
+           aria-describedby="purchase-orders-table-info">
+      
+      <caption class="visually-hidden">
+        Purchase Orders: Manage and track all purchase orders from suppliers
+      </caption>
+      
+      <!-- Table Header -->
+      <thead>
+        <tr role="row">
+          <th scope="col" class="table-header-cell sortable text-center" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="id" aria-label="Sort by Order ID">
+            <div class="header-content">
+              <span class="header-text">#</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="supplier" aria-label="Sort by Supplier">
+            <div class="header-content">
+              <span class="header-text">Supplier</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="location" aria-label="Sort by Location">
+            <div class="header-content">
+              <span class="header-text">Location</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="date_ordered" aria-label="Sort by Date Ordered">
+            <div class="header-content">
+              <span class="header-text">Date Ordered</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="status" aria-label="Sort by Status">
+            <div class="header-content">
+              <span class="header-text">Status</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell">Actions</th>
+        </tr>
+      </thead>
+      
+      <!-- Table Body -->
+      <tbody>
+        {% for order in purchase_orders %}
+          <tr role="row" class="data-row" data-row-id="{{ order.id }}">
+            <td class="text-cell text-center">{{ order.id }}</td>
+            <td class="text-cell">{{ order.supplier.name }}</td>
+            <td class="text-cell">{{ order.location.name }}</td>
+            <td class="date-cell">
+              <time datetime="{{ order.date_ordered|date:'Y-m-d' }}" 
+                    aria-label="{{ order.date_ordered|date:'F j, Y' }}">
+                {{ order.date_ordered|date:'M j, Y' }}
+              </time>
+            </td>
+            <td class="status-cell">
+              {% status_badge order.status %}
+            </td>
+            <td class="actions-cell">
+              <div class="btn-group" role="group" aria-label="Actions for order {{ order.id }}">
+                <a href="{% url 'purchases:order_detail' order.id %}" 
+                   class="btn btn-sm btn-outline-primary"
+                   aria-label="View order {{ order.id }}"
+                   title="View">
+                  <i class="fas fa-eye me-1" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">View</span>
+                </a>
+                <a href="{% url 'purchases:order_update' order.id %}" 
+                   class="btn btn-sm btn-outline-secondary"
+                   aria-label="Edit order {{ order.id }}"
+                   title="Edit">
+                  <i class="fas fa-edit me-1" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">Edit</span>
+                </a>
+                <a href="{% url 'purchases:order_delete' order.id %}" 
+                   class="btn btn-sm btn-outline-danger"
+                   aria-label="Delete order {{ order.id }}"
+                   title="Delete">
+                  <i class="fas fa-trash me-1" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">Delete</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr class="empty-row">
+            <td colspan="6" class="text-center empty-state">
+              <div class="empty-state-content">
+                <i class="fas fa-inbox fa-3x text-muted mb-3" aria-hidden="true"></i>
+                <p class="empty-message">
+                  No purchase orders found. Create your first purchase order to get started.
+                </p>
+                <a href="{% url 'purchases:order_create' %}" 
+                   class="btn btn-primary"
+                   aria-label="Create first purchase order">
+                  <i class="fas fa-plus me-2" aria-hidden="true"></i>
+                  Create First Order
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Table Footer -->
+  <div class="table-footer">
+    <div class="table-info" id="purchase-orders-table-info" aria-live="polite">
+      {% if purchase_orders %}
+        Showing {{ purchase_orders|length }} 
+        {% if purchase_orders|length == 1 %}order{% else %}orders{% endif %}
+      {% endif %}
+    </div>
+  </div>
 </div>
 {% endblock %}

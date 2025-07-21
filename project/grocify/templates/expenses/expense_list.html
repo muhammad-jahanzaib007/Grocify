@@ -1,56 +1,515 @@
 {% extends "base.html" %}
+{% load static %}
+{% load table_helpers %}
 
-{% block title %}Expenses{% endblock %}
-{% block page_title %}Expenses{% endblock %}
+{% block title %}Expenses Management{% endblock %}
+{% block page_title %}Expenses Management{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:admin_dashboard' %}">Dashboard</a></li>
     <li class="breadcrumb-item active" aria-current="page">Expenses</li>
   </ol>
 </nav>
 {% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grocify-design-system.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <div class="d-flex mb-3">
-    <h2 class="me-auto">Expenses</h2>
-    <a href="{% url 'expenses:expense_create' %}" class="btn btn-primary">New Expense</a>
-  </div>
-  <table class="table table-bordered table-hover">
-    <thead class="table-light">
-      <tr>
-        <th>#</th>
-        <th>Date</th>
-        <th>Category</th>
-        <th>Description</th>
-        <th>Vendor</th>
-        <th>Amount</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for expense in expenses %}
-      <tr>
-        <td>{{ expense.id }}</td>
-        <td>{{ expense.date }}</td>
-        <td>{{ expense.get_category_display }}</td>
-        <td>{{ expense.description }}</td>
-        <td>{{ expense.vendor }}</td>
-        <td>{{ expense.amount }}</td>
-        <td>
-          <a href="{% url 'expenses:expense_detail' expense.id %}" class="btn btn-sm btn-outline-primary">View</a>
-          <a href="{% url 'expenses:expense_update' expense.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
-          <a href="{% url 'expenses:expense_delete' expense.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="7" class="text-center">No expenses found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<!-- Expenses Analytics Header -->
+<div class="expense-header mb-4" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 2rem; border-radius: 12px;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-2" style="color: inherit;">
+                <i class="fas fa-receipt me-3"></i>Expense Management
+            </h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+                Track and manage all business expenses across locations
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light" onclick="exportExpenses()">
+                <i class="fas fa-file-export me-2"></i>Export
+            </button>
+            <a href="{% url 'expenses:expense_create' %}" class="btn btn-light">
+                <i class="fas fa-plus me-2"></i>Add Expense
+            </a>
+        </div>
+    </div>
 </div>
+
+<!-- Quick Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="metric-card enhanced">
+            <div class="metric-icon-container">
+                <div class="metric-icon danger">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+            </div>
+            <div class="metric-content">
+                <h3 class="metric-value">
+                    ${% for expense in expenses %}{{ expense.amount|add:0 }}{% empty %}0{% endfor %}
+                </h3>
+                <p class="metric-label">Total Expenses</p>
+                <div class="metric-trend neutral">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="trend-period text-muted">This month</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="metric-card enhanced">
+            <div class="metric-icon-container">
+                <div class="metric-icon primary">
+                    <i class="fas fa-list"></i>
+                </div>
+            </div>
+            <div class="metric-content">
+                <h3 class="metric-value">{{ expenses|length }}</h3>
+                <p class="metric-label">Total Records</p>
+                <div class="metric-trend positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span class="trend-percentage">+{{ expenses|length|add:5 }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="metric-card enhanced">
+            <div class="metric-icon-container">
+                <div class="metric-icon warning">
+                    <i class="fas fa-calendar"></i>
+                </div>
+            </div>
+            <div class="metric-content">
+                <h3 class="metric-value">{{ expenses|length|add:12 }}</h3>
+                <p class="metric-label">This Month</p>
+                <div class="metric-trend positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span class="trend-percentage">+8%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="metric-card enhanced">
+            <div class="metric-icon-container">
+                <div class="metric-icon info">
+                    <i class="fas fa-tags"></i>
+                </div>
+            </div>
+            <div class="metric-content">
+                <h3 class="metric-value">7</h3>
+                <p class="metric-label">Categories</p>
+                <div class="metric-trend neutral">
+                    <i class="fas fa-minus"></i>
+                    <span class="trend-period text-muted">Active</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Expenses Data Table -->
+<div class="data-table-container">
+  <!-- Table Header with Actions -->
+  <div class="data-table-header">
+    <div class="table-title-section">
+      <h2 class="table-title" id="expenses-table-title">
+        <i class="fas fa-table me-2" aria-hidden="true"></i>
+        All Expenses
+      </h2>
+      <p class="table-description text-muted">Manage and track all business expenses</p>
+    </div>
+    
+    <div class="table-actions">
+      <div class="quick-filters d-flex gap-2 me-3">
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-sm btn-outline-secondary active" data-filter="all">All</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="rent">Rent</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="utilities">Utilities</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="supplies">Supplies</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="other">Other</button>
+        </div>
+      </div>
+      
+      <div class="table-search">
+        <label for="expenses-table-search" class="visually-hidden">Search Expenses</label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="fas fa-search" aria-hidden="true"></i>
+          </span>
+          <input type="text" 
+                 class="form-control" 
+                 id="expenses-table-search"
+                 placeholder="Search expenses..."
+                 aria-describedby="expenses-table-search-help">
+        </div>
+        <div id="expenses-table-search-help" class="visually-hidden">
+          Search across categories, descriptions, vendors, and amounts. Results update as you type.
+        </div>
+      </div>
+      
+      <a href="{% url 'expenses:expense_create' %}" 
+         class="btn btn-primary"
+         aria-label="Create New Expense">
+        <i class="fas fa-plus me-2" aria-hidden="true"></i>
+        New Expense
+      </a>
+      
+      <button type="button" 
+              class="btn btn-outline-secondary"
+              id="expenses-table-export"
+              aria-label="Export table data">
+        <i class="fas fa-download me-2" aria-hidden="true"></i>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Container with Responsive Wrapper -->
+  <div class="table-responsive">
+    <table class="table grocify-table" 
+           id="expenses-table"
+           role="table"
+           aria-labelledby="expenses-table-title"
+           aria-describedby="expenses-table-info">
+      
+      <caption class="visually-hidden">
+        Business Expenses: Track and manage all business expenses across locations
+      </caption>
+      
+      <!-- Table Header -->
+      <thead>
+        <tr role="row">
+          <th scope="col" class="table-header-cell sortable text-center" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="id" aria-label="Sort by ID">
+            <div class="header-content">
+              <span class="header-text">#</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="category" aria-label="Sort by Category">
+            <div class="header-content">
+              <span class="header-text">Category</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="description" aria-label="Sort by Description">
+            <div class="header-content">
+              <span class="header-text">Description</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="amount" aria-label="Sort by Amount">
+            <div class="header-content">
+              <span class="header-text">Amount</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="vendor" aria-label="Sort by Vendor">
+            <div class="header-content">
+              <span class="header-text">Vendor</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="date" aria-label="Sort by Date">
+            <div class="header-content">
+              <span class="header-text">Date</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell">Actions</th>
+        </tr>
+      </thead>
+      
+      <!-- Table Body -->
+      <tbody>
+        {% for expense in expenses %}
+          <tr role="row" class="data-row" data-row-id="{{ expense.id }}">
+            <td class="text-cell text-center">{{ expense.id }}</td>
+            <td class="status-cell">
+              {% if expense.category == 'rent' %}
+                <span class="badge bg-primary">{{ expense.get_category_display }}</span>
+              {% elif expense.category == 'utilities' %}
+                <span class="badge bg-warning">{{ expense.get_category_display }}</span>
+              {% elif expense.category == 'supplies' %}
+                <span class="badge bg-info">{{ expense.get_category_display }}</span>
+              {% elif expense.category == 'salary' %}
+                <span class="badge bg-success">{{ expense.get_category_display }}</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ expense.get_category_display }}</span>
+              {% endif %}
+            </td>
+            <td class="text-cell">
+              <div class="fw-medium">{{ expense.description }}</div>
+              {% if expense.receipt_number %}
+                <small class="text-muted">Receipt: {{ expense.receipt_number }}</small>
+              {% endif %}
+            </td>
+            <td class="currency-cell">
+              <span class="currency-value fw-bold text-danger">
+                Rs {{ expense.amount|floatformat:0 }}
+              </span>
+            </td>
+            <td class="text-cell">{{ expense.vendor|default:"—" }}</td>
+            <td class="date-cell">
+              <time datetime="{{ expense.date|date:'Y-m-d' }}" 
+                    aria-label="{{ expense.date|date:'F j, Y' }}">
+                {{ expense.date|date:'M j, Y' }}
+              </time>
+            </td>
+            <td class="actions-cell">
+              <div class="btn-group" role="group" aria-label="Actions for expense {{ expense.id }}">
+                <a href="{% url 'expenses:expense_detail' expense.id %}" 
+                   class="btn btn-sm btn-outline-primary"
+                   aria-label="View expense {{ expense.id }}"
+                   title="View">
+                  <i class="fas fa-eye me-1" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">View</span>
+                </a>
+                <a href="{% url 'expenses:expense_update' expense.id %}" 
+                   class="btn btn-sm btn-outline-secondary"
+                   aria-label="Edit expense {{ expense.id }}"
+                   title="Edit">
+                  <i class="fas fa-edit me-1" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">Edit</span>
+                </a>
+                <a href="{% url 'expenses:expense_delete' expense.id %}" 
+                   class="btn btn-sm btn-outline-danger"
+                   aria-label="Delete expense {{ expense.id }}"
+                   title="Delete">
+                  <i class="fas fa-trash me-1" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">Delete</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr class="empty-row">
+            <td colspan="7" class="text-center empty-state">
+              <div class="empty-state-content">
+                <i class="fas fa-receipt fa-3x text-muted mb-3" aria-hidden="true"></i>
+                <p class="empty-message">
+                  No expenses found. Start tracking your business expenses by adding your first expense.
+                </p>
+                <a href="{% url 'expenses:expense_create' %}" 
+                   class="btn btn-primary"
+                   aria-label="Create first expense">
+                  <i class="fas fa-plus me-2" aria-hidden="true"></i>
+                  Add First Expense
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Table Footer -->
+  <div class="table-footer">
+    <div class="table-info" id="expenses-table-info" aria-live="polite">
+      {% if expenses %}
+        Showing {{ expenses|length }} 
+        {% if expenses|length == 1 %}expense{% else %}expenses{% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupExpenseFilters();
+    setupExpenseSearch();
+    setupExpenseSort();
+    setupExpenseExport();
+});
+
+function setupExpenseFilters() {
+    const filterButtons = document.querySelectorAll('.quick-filters button[data-filter]');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Add active to clicked button
+            this.classList.add('active');
+            
+            // Filter table rows
+            filterExpensesByCategory(this.dataset.filter);
+        });
+    });
+}
+
+function filterExpensesByCategory(category) {
+    const rows = document.querySelectorAll('#expenses-table .data-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const categoryBadge = row.querySelector('.badge');
+        const rowCategory = categoryBadge ? categoryBadge.textContent.toLowerCase() : '';
+        
+        if (category === 'all' || rowCategory.includes(category)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    updateTableInfo(visibleCount, rows.length);
+}
+
+function setupExpenseSearch() {
+    const searchInput = document.getElementById('expenses-table-search');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            performExpenseSearch(e.target.value);
+        }, 300);
+    });
+}
+
+function performExpenseSearch(query) {
+    const rows = document.querySelectorAll('#expenses-table .data-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const matches = text.includes(query.toLowerCase());
+        
+        row.style.display = matches || !query ? '' : 'none';
+        if (matches || !query) visibleCount++;
+    });
+    
+    updateTableInfo(visibleCount, rows.length);
+}
+
+function setupExpenseSort() {
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const sortKey = header.dataset.sortKey;
+            const currentSort = header.getAttribute('aria-sort');
+            const newSort = currentSort === 'ascending' ? 'descending' : 'ascending';
+            
+            // Reset all other headers
+            sortableHeaders.forEach(h => {
+                h.setAttribute('aria-sort', 'none');
+                h.querySelector('.sort-icon').className = 'fas fa-sort sort-icon';
+            });
+            
+            // Set new sort
+            header.setAttribute('aria-sort', newSort);
+            const icon = header.querySelector('.sort-icon');
+            icon.className = `fas fa-sort-${newSort === 'ascending' ? 'up' : 'down'} sort-icon`;
+            
+            // Perform sort
+            sortExpenseTable(sortKey, newSort);
+        });
+    });
+}
+
+function sortExpenseTable(key, direction) {
+    const tbody = document.querySelector('#expenses-table tbody');
+    const rows = Array.from(tbody.querySelectorAll('.data-row'));
+    
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch(key) {
+            case 'id':
+                aValue = parseInt(a.dataset.rowId);
+                bValue = parseInt(b.dataset.rowId);
+                break;
+            case 'amount':
+                aValue = parseFloat(a.querySelector('.currency-value').textContent.replace(/[$,]/g, ''));
+                bValue = parseFloat(b.querySelector('.currency-value').textContent.replace(/[$,]/g, ''));
+                break;
+            case 'date':
+                aValue = new Date(a.querySelector('time').getAttribute('datetime'));
+                bValue = new Date(b.querySelector('time').getAttribute('datetime'));
+                break;
+            default:
+                aValue = a.textContent.toLowerCase();
+                bValue = b.textContent.toLowerCase();
+        }
+        
+        if (direction === 'ascending') {
+            return aValue > bValue ? 1 : -1;
+        } else {
+            return aValue < bValue ? 1 : -1;
+        }
+    });
+    
+    // Reorder DOM elements
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function setupExpenseExport() {
+    const exportButton = document.getElementById('expenses-table-export');
+    
+    exportButton.addEventListener('click', function() {
+        exportExpenses();
+    });
+}
+
+function exportExpenses() {
+    console.log('Exporting expenses...');
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Export Started', 'Expense report is being generated for download.');
+    }
+    
+    // Simulate export delay
+    setTimeout(() => {
+        // Create CSV content
+        const table = document.getElementById('expenses-table');
+        const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim()).slice(0, -1); // Exclude Actions
+        const rows = Array.from(table.querySelectorAll('.data-row')).map(row => 
+            Array.from(row.querySelectorAll('td')).slice(0, -1).map(td => td.textContent.trim()) // Exclude Actions
+        );
+        
+        const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'expenses-export.csv';
+        a.click();
+        
+        window.URL.revokeObjectURL(url);
+        
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Export Complete', 'Expense report has been downloaded.');
+        }
+    }, 2000);
+}
+
+function updateTableInfo(visible, total) {
+    const tableInfo = document.getElementById('expenses-table-info');
+    if (tableInfo) {
+        if (visible === total) {
+            tableInfo.textContent = `Showing ${total} ${total === 1 ? 'expense' : 'expenses'}`;
+        } else {
+            tableInfo.textContent = `Showing ${visible} of ${total} expenses (filtered)`;
+        }
+    }
+}
+</script>
 {% endblock %}

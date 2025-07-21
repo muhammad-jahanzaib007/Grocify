@@ -1,91 +1,424 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Purchase Order #{{ purchase_order.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .info-card {
+    transition: box-shadow 0.15s ease-in-out;
+  }
+  .info-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+  .status-badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+  }
+  .action-buttons .btn {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .total-row {
+    background-color: #f8f9fa;
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'purchases:order_list' %}">Purchases</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Order #{{ purchase_order.id }}</li>
+    <li class="breadcrumb-item">
+      <a href="{% url 'purchases:order_list' %}"><i class="fas fa-shopping-cart"></i> Purchases</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">
+      Order #{{ purchase_order.id }}
+    </li>
   </ol>
 </nav>
 {% endblock %}
 
-{% block page_title %}
-<h1>Order #{{ purchase_order.id }}</h1>
-{% endblock %}
-
 {% block content %}
 <div class="container mt-4">
+  <!-- Order Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2><i class="fas fa-file-invoice"></i> Purchase Order #{{ purchase_order.id }}</h2>
+      <p class="text-muted mb-0">
+        Created on {{ purchase_order.date_ordered|date:"F d, Y" }}
+      </p>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="action-buttons">
+        {% if purchase_order.status == 'Pending' %}
+          <a href="{% url 'purchases:order_update' purchase_order.id %}" class="btn btn-primary">
+            <i class="fas fa-edit"></i> Edit Order
+          </a>
+          <a href="{% url 'purchases:receipt_create' %}?purchase_order={{ purchase_order.id }}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Add Receipt
+          </a>
+        {% endif %}
+        <div class="dropdown d-inline-block">
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="fas fa-ellipsis-v"></i> More
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><i class="fas fa-print"></i> Print Order</a></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-download"></i> Export PDF</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'purchases:order_delete' purchase_order.id %}">
+              <i class="fas fa-trash"></i> Delete Order
+            </a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Information -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-6">
+      <div class="card info-card h-100">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-info-circle"></i> Order Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-2">
+            <div class="col-4"><strong>Supplier:</strong></div>
+            <div class="col-8">
+              <i class="fas fa-building"></i> {{ purchase_order.supplier.name }}
+            </div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-4"><strong>Location:</strong></div>
+            <div class="col-8">
+              <i class="fas fa-map-marker-alt"></i> {{ purchase_order.location.name|default:"Not specified" }}
+            </div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-4"><strong>Date Ordered:</strong></div>
+            <div class="col-8">
+              <i class="fas fa-calendar"></i> {{ purchase_order.date_ordered|date:"M d, Y" }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4"><strong>Status:</strong></div>
+            <div class="col-8">
+              {% if purchase_order.status == 'Pending' %}
+                <span class="badge bg-warning status-badge">
+                  <i class="fas fa-clock"></i> Pending
+                </span>
+              {% elif purchase_order.status == 'Received' %}
+                <span class="badge bg-success status-badge">
+                  <i class="fas fa-check"></i> Received
+                </span>
+              {% elif purchase_order.status == 'Cancelled' %}
+                <span class="badge bg-danger status-badge">
+                  <i class="fas fa-times"></i> Cancelled
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="card info-card h-100">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-sticky-note"></i> Notes</h5>
+        </div>
+        <div class="card-body">
+          {% if purchase_order.notes %}
+            <p class="mb-0">{{ purchase_order.notes|linebreaks }}</p>
+          {% else %}
+            <p class="text-muted mb-0"><em>No notes added</em></p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Items -->
   <div class="card mb-4">
+    <div class="card-header">
+      <div class="row align-items-center">
+        <div class="col">
+          <h5 class="mb-0"><i class="fas fa-list"></i> Order Items</h5>
+        </div>
+        <div class="col-auto">
+          {% if purchase_order.status == 'Pending' %}
+            <a href="{% url 'purchases:item_create' %}?purchase_order={{ purchase_order.id }}" class="btn btn-sm btn-primary">
+              <i class="fas fa-plus"></i> Add Item
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
     <div class="card-body">
-      <h5>Supplier:</h5> {{ purchase_order.supplier.name }}
-      <h5>Location:</h5> {{ purchase_order.location.name }}
-      <h5>Date Ordered:</h5> {{ purchase_order.date_ordered }}
-      <h5>Status:</h5> {{ purchase_order.status }}
-      {% if purchase_order.notes %}
-        <h5>Notes:</h5>
-        <p>{{ purchase_order.notes }}</p>
+      {% if purchase_order.items.all %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th><i class="fas fa-box"></i> Product</th>
+                <th class="text-center"><i class="fas fa-sort-numeric-up"></i> Quantity</th>
+                <th class="text-end"><i class="fas fa-dollar-sign"></i> Cost Price</th>
+                <th class="text-end"><i class="fas fa-calculator"></i> Total</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in purchase_order.items.all %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="bg-light rounded p-2 me-3">
+                        <i class="fas fa-cube text-primary"></i>
+                      </div>
+                      <div>
+                        <strong>{{ item.product.name }}</strong>
+                        {% if item.product.sku %}
+                          <br><small class="text-muted">SKU: {{ item.product.sku }}</small>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
+                      {{ item.quantity }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <strong>Rs {{ item.cost_price|floatformat:0 }}</strong>
+                  </td>
+                  <td class="text-end">
+                    <strong id="line-total-{{ item.id }}">Rs 0</strong>
+                  </td>
+                  <td class="text-center">
+                    {% if purchase_order.status == 'Pending' %}
+                      <div class="btn-group btn-group-sm">
+                        <a href="{% url 'purchases:item_create' %}?purchase_order={{ purchase_order.id }}&edit={{ item.id }}" 
+                           class="btn btn-outline-primary" 
+                           data-bs-toggle="tooltip" 
+                           title="Edit Item">
+                          <i class="fas fa-edit"></i>
+                        </a>
+                        <button class="btn btn-outline-danger" 
+                                onclick="deleteItem({{ item.id }})" 
+                                data-bs-toggle="tooltip" 
+                                title="Remove Item">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+              
+              <!-- Order Total Row -->
+              <tr class="total-row">
+                <td colspan="3" class="text-end"><strong>Order Total:</strong></td>
+                <td class="text-end">
+                  <strong class="h5 mb-0" id="order-total">Rs 0</strong>
+                </td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <div class="mb-4">
+            <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+              <i class="fas fa-inbox fa-3x text-muted"></i>
+            </div>
+          </div>
+          <h5 class="fw-bold text-dark mb-2">No items in this order</h5>
+          <p class="text-muted mb-4">Add items to this purchase order to track inventory restocking.</p>
+          {% if purchase_order.status == 'Pending' %}
+            <a href="{% url 'purchases:item_create' %}?purchase_order={{ purchase_order.id }}" 
+               class="btn btn-primary rounded-pill px-4">
+              <i class="fas fa-plus me-2"></i>Add First Item
+            </a>
+          {% endif %}
+        </div>
       {% endif %}
     </div>
   </div>
 
-  <h4>Items</h4>
-  <table class="table table-bordered table-hover">
-    <thead class="table-light">
-      <tr>
-        <th>Product</th>
-        <th>Quantity</th>
-        <th>Cost Price</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in purchase_order.items.all %}
-      <tr>
-        <td>{{ item.product.name }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>{{ item.cost_price }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="3" class="text-center">No items found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <!-- Receipts Section -->
+  {% if purchase_order.receipts.all %}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-receipt"></i> Receipts</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for receipt in purchase_order.receipts.all %}
+            <div class="col-md-6">
+              <div class="card border">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="card-title mb-0">
+                      <i class="fas fa-file-alt"></i> Receipt #{{ receipt.id }}
+                    </h6>
+                    <span class="badge bg-success">Received</span>
+                  </div>
+                  <p class="card-text">
+                    <small class="text-muted">
+                      <i class="fas fa-user"></i> {{ receipt.received_by.username }}<br>
+                      <i class="fas fa-clock"></i> {{ receipt.received_at|date:"M d, Y g:i A" }}
+                    </small>
+                  </p>
+                  <a href="{% url 'purchases:receipt_detail' receipt.id %}" 
+                     class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye"></i> View Details
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
 
-  <a href="{% url 'purchases:item_create' %}?purchase_order={{ purchase_order.id }}" class="btn btn-sm btn-primary">Add Item</a>
-
-  <h4 class="mt-4">Receipts</h4>
-  <table class="table table-bordered table-hover">
-    <thead class="table-light">
-      <tr>
-        <th>ID</th>
-        <th>Received By</th>
-        <th>Received At</th>
-        <th>Notes</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for receipt in purchase_order.receipts.all %}
-      <tr>
-        <td>{{ receipt.id }}</td>
-        <td>{{ receipt.received_by.username }}</td>
-        <td>{{ receipt.received_at }}</td>
-        <td>{{ receipt.notes }}</td>
-        <td>
-          <a href="{% url 'purchases:receipt_detail' receipt.id %}" class="btn btn-sm btn-outline-primary">View</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="5" class="text-center">No receipts found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <a href="{% url 'purchases:receipt_create' %}?purchase_order={{ purchase_order.id }}" class="btn btn-sm btn-success">Add Receipt</a>
+  <!-- Activity Log (Future Enhancement) -->
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-history"></i> Activity Log</h5>
+    </div>
+    <div class="card-body">
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-marker bg-primary"></div>
+          <div class="timeline-content">
+            <h6 class="mb-1">Order Created</h6>
+            <p class="text-muted mb-0">
+              <small>{{ purchase_order.date_ordered|date:"M d, Y" }}</small>
+            </p>
+          </div>
+        </div>
+        
+        {% for receipt in purchase_order.receipts.all %}
+          <div class="timeline-item">
+            <div class="timeline-marker bg-success"></div>
+            <div class="timeline-content">
+              <h6 class="mb-1">Items Received</h6>
+              <p class="text-muted mb-0">
+                <small>{{ receipt.received_at|date:"M d, Y g:i A" }} by {{ receipt.received_by.username }}</small>
+              </p>
+            </div>
+          </div>
+        {% endfor %}
+        
+        {% if purchase_order.status == 'Cancelled' %}
+          <div class="timeline-item">
+            <div class="timeline-marker bg-danger"></div>
+            <div class="timeline-content">
+              <h6 class="mb-1">Order Cancelled</h6>
+              <p class="text-muted mb-0">
+                <small>Status changed to cancelled</small>
+              </p>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
+
+<style>
+/* Timeline Styles */
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -2.25rem;
+  top: 0.125rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px currentColor;
+}
+
+.timeline-content {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  border-left: 3px solid currentColor;
+}
+</style>
+
+<script>
+function deleteItem(itemId) {
+  if (confirm('Are you sure you want to remove this item from the order?')) {
+    // Implementation for deleting item
+    fetch(`/purchases/items/${itemId}/delete/`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => {
+      if (response.ok) {
+        location.reload();
+      } else {
+        alert('Failed to delete item');
+      }
+    })
+    .catch(error => {
+      alert('Error deleting item');
+    });
+  }
+}
+
+// Calculate order total
+document.addEventListener('DOMContentLoaded', function() {
+  let orderTotal = 0;
+  {% for item in purchase_order.items.all %}
+    const lineTotal{{ item.id }} = {{ item.cost_price }} * {{ item.quantity }};
+    orderTotal += lineTotal{{ item.id }};
+    const lineTotalElement = document.getElementById('line-total-{{ item.id }}');
+    if (lineTotalElement) {
+      lineTotalElement.textContent = '$' + lineTotal{{ item.id }}.toFixed(2);
+    }
+  {% endfor %}
+  
+  const orderTotalElement = document.getElementById('order-total');
+  if (orderTotalElement) {
+    orderTotalElement.textContent = '$' + orderTotal.toFixed(2);
+  }
+
+  // Initialize tooltips
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+});
+</script>
 {% endblock %}

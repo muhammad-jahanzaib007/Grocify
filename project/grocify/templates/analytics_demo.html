@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - Demo{% endblock %}
+
+{% block page_title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="card-grid">
+    <div class="summary-card">
+        <div class="card-header">Total Sales</div>
+        <div class="card-number">Rs 24,580</div>
+        <div class="card-subtext">+12% from last month</div>
+    </div>
+    <div class="summary-card">
+        <div class="card-header">Orders</div>
+        <div class="card-number">1,247</div>
+        <div class="card-subtext">+8% from last month</div>
+    </div>
+    <div class="summary-card">
+        <div class="card-header">Customers</div>
+        <div class="card-number">892</div>
+        <div class="card-subtext">+15% from last month</div>
+    </div>
+    <div class="summary-card">
+        <div class="card-header">Inventory Value</div>
+        <div class="card-number">Rs 45,230</div>
+        <div class="card-subtext">Current stock value</div>
+    </div>
+</div>
+
+<!-- Sample Data Table -->
+<div class="card">
+    <div class="card-header p-3">
+        <h5 class="mb-0">Recent Transactions</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#TXN001</td>
+                        <td>John Doe</td>
+                        <td>Rs 157</td>
+                        <td>2024-01-15</td>
+                        <td><span class="badge bg-success">Completed</span></td>
+                    </tr>
+                    <tr>
+                        <td>#TXN002</td>
+                        <td>Jane Smith</td>
+                        <td>Rs 90</td>
+                        <td>2024-01-15</td>
+                        <td><span class="badge bg-warning">Pending</span></td>
+                    </tr>
+                    <tr>
+                        <td>#TXN003</td>
+                        <td>Bob Johnson</td>
+                        <td>Rs 234</td>
+                        <td>2024-01-14</td>
+                        <td><span class="badge bg-success">Completed</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,30 +1,650 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
+
 {% block title %}{{ title }}{% endblock %}
-{% block page_title %}
-<h1>{{ title }}</h1>
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:admin_dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'inventory:stock_dashboard' %}">Inventory</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grocify-design-system.css' %}">
+<style>
+.product-form-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.form-container {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.form-section {
+    padding: 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.form-section:last-child {
+    border-bottom: none;
+}
+
+.form-section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.form-section-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: var(--text-inverse);
+    margin-right: 1rem;
+}
+
+.form-section-icon.basic {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.form-section-icon.pricing {
+    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+}
+
+.form-section-icon.inventory {
+    background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+}
+
+.form-section-icon.details {
+    background: linear-gradient(135deg, var(--info) 0%, #0284c7 100%);
+}
+
+.form-section-title {
+    font-size: 1.25rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.form-section-description {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.form-group-enhanced {
+    margin-bottom: 1.5rem;
+}
+
+.form-label-enhanced {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-label-icon {
+    color: var(--primary);
+    font-size: 0.875rem;
+}
+
+.form-control-enhanced {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    transition: var(--transition);
+    background: var(--bg-primary);
+}
+
+.form-control-enhanced:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: var(--bg-primary);
+}
+
+.form-help-text {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.form-error {
+    color: var(--danger);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.product-image-upload {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    text-align: center;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.product-image-upload:hover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.product-image-upload.dragover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+
+.upload-text {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.upload-hint {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.form-actions {
+    padding: 2rem;
+    background: var(--bg-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.form-progress {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.progress-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .form-section {
+        padding: 1.5rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .product-form-header {
+        padding: 1.5rem;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="card p-4 shadow-sm">
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {% for field in form %}
-      <div class="mb-3">
-        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-        {{ field }}
-        {% if field.help_text %}
-          <div class="form-text">{{ field.help_text }}</div>
-        {% endif %}
-        {% for error in field.errors %}
-          <div class="text-danger">{{ error }}</div>
-        {% endfor %}
-      </div>
-    {% endfor %}
-
-    <div class="mt-4 d-flex justify-content-between">
-      <a href="{% url 'inventory:stock_dashboard' %}" class="btn btn-outline-secondary">← Cancel</a>
-      <button type="submit" class="btn btn-success">💾 Save Product</button>
+<!-- Product Form Header -->
+<div class="product-form-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-2" style="color: inherit;">
+                <i class="fas fa-{% if 'Edit' in title %}edit{% else %}plus{% endif %} me-3"></i>{{ title }}
+            </h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+                {% if 'Edit' in title %}
+                    Update product information and inventory details
+                {% else %}
+                    Add a new product to your inventory system
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'inventory:stock_dashboard' %}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+            </a>
+        </div>
     </div>
-  </form>
 </div>
+
+<!-- Product Form -->
+<div class="form-container">
+    <form method="post" enctype="multipart/form-data" id="productForm" novalidate>
+        {% csrf_token %}
+        
+        <!-- Basic Information Section -->
+        <div class="form-section">
+            <div class="form-section-header">
+                <div class="form-section-icon basic">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div>
+                    <h3 class="form-section-title">Basic Information</h3>
+                    <p class="form-section-description">Essential product details and identification</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    {% for field in form %}
+                        {% if field.name == 'name' or field.name == 'description' or field.name == 'category' or field.name == 'company' %}
+                            <div class="form-group-enhanced">
+                                <label for="{{ field.id_for_label }}" class="form-label-enhanced">
+                                    <i class="form-label-icon fas fa-{% if field.name == 'name' %}tag{% elif field.name == 'description' %}align-left{% elif field.name == 'category' %}folder{% elif field.name == 'company' %}building{% endif %}"></i>
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                {% if field.name == 'description' %}
+                                    <textarea class="form-control form-control-enhanced" id="{{ field.id_for_label }}" name="{{ field.name }}" rows="3" placeholder="Enter product description...">{{ field.value|default:'' }}</textarea>
+                                {% elif field.name == 'category' or field.name == 'company' %}
+                                    {{ field }}
+                                    <script>
+                                        document.getElementById('{{ field.id_for_label }}').className = 'form-control form-control-enhanced';
+                                    </script>
+                                {% else %}
+                                    <input type="text" class="form-control form-control-enhanced" id="{{ field.id_for_label }}" name="{{ field.name }}" value="{{ field.value|default:'' }}" placeholder="Enter {{ field.label|lower }}..." {% if field.field.required %}required{% endif %}>
+                                {% endif %}
+                                {% if field.help_text %}
+                                    <div class="form-help-text">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="form-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <div class="col-md-4">
+                    <!-- Product Image Upload -->
+                    <div class="form-group-enhanced">
+                        <label class="form-label-enhanced">
+                            <i class="form-label-icon fas fa-camera"></i>
+                            Product Image
+                        </label>
+                        <div class="product-image-upload" onclick="document.getElementById('imageUpload').click()">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <div class="upload-text">Click to upload image</div>
+                            <div class="upload-hint">PNG, JPG up to 5MB</div>
+                            <input type="file" id="imageUpload" name="image" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pricing Section -->
+        <div class="form-section">
+            <div class="form-section-header">
+                <div class="form-section-icon pricing">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div>
+                    <h3 class="form-section-title">Pricing Information</h3>
+                    <p class="form-section-description">Set purchase and selling prices</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                {% for field in form %}
+                    {% if field.name == 'cost_price' or field.name == 'selling_price' %}
+                        <div class="col-md-6">
+                            <div class="form-group-enhanced">
+                                <label for="{{ field.id_for_label }}" class="form-label-enhanced">
+                                    <i class="form-label-icon fas fa-{% if field.name == 'cost_price' %}shopping-cart{% else %}money-bill-wave{% endif %}"></i>
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control form-control-enhanced" id="{{ field.id_for_label }}" name="{{ field.name }}" value="{{ field.value|default:'' }}" step="0.01" min="0" placeholder="0.00" {% if field.field.required %}required{% endif %}>
+                                </div>
+                                {% if field.help_text %}
+                                    <div class="form-help-text">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="form-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <!-- Profit Margin Calculator -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="alert alert-info d-flex align-items-center">
+                        <i class="fas fa-calculator me-3"></i>
+                        <div>
+                            <strong>Profit Margin:</strong> <span id="profitMargin">Rs 0 (0%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Inventory Section -->
+        <div class="form-section">
+            <div class="form-section-header">
+                <div class="form-section-icon inventory">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <div>
+                    <h3 class="form-section-title">Inventory Management</h3>
+                    <p class="form-section-description">Stock levels and reorder settings</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                {% for field in form %}
+                    {% if field.name == 'reorder_level' or field.name == 'unit' %}
+                        <div class="col-md-6">
+                            <div class="form-group-enhanced">
+                                <label for="{{ field.id_for_label }}" class="form-label-enhanced">
+                                    <i class="form-label-icon fas fa-{% if field.name == 'reorder_level' %}exclamation-triangle{% else %}weight{% endif %}"></i>
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                {% if field.name == 'unit' %}
+                                    {{ field }}
+                                    <script>
+                                        document.getElementById('{{ field.id_for_label }}').className = 'form-control form-control-enhanced';
+                                    </script>
+                                {% else %}
+                                    <input type="number" class="form-control form-control-enhanced" id="{{ field.id_for_label }}" name="{{ field.name }}" value="{{ field.value|default:'' }}" min="0" placeholder="Enter {{ field.label|lower }}..." {% if field.field.required %}required{% endif %}>
+                                {% endif %}
+                                {% if field.help_text %}
+                                    <div class="form-help-text">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="form-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Additional Details Section -->
+        <div class="form-section">
+            <div class="form-section-header">
+                <div class="form-section-icon details">
+                    <i class="fas fa-list-alt"></i>
+                </div>
+                <div>
+                    <h3 class="form-section-title">Additional Details</h3>
+                    <p class="form-section-description">Tracking and identification codes</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                {% for field in form %}
+                    {% if field.name == 'sku' or field.name == 'barcode' %}
+                        <div class="col-md-6">
+                            <div class="form-group-enhanced">
+                                <label for="{{ field.id_for_label }}" class="form-label-enhanced">
+                                    <i class="form-label-icon fas fa-{% if field.name == 'sku' %}code{% else %}barcode{% endif %}"></i>
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                <input type="text" class="form-control form-control-enhanced" id="{{ field.id_for_label }}" name="{{ field.name }}" value="{{ field.value|default:'' }}" placeholder="Enter {{ field.label|lower }}..." {% if field.field.required %}required{% endif %}>
+                                {% if field.help_text %}
+                                    <div class="form-help-text">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="form-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Form Actions -->
+<div class="form-actions">
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'inventory:stock_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Cancel
+        </a>
+        <div class="form-progress">
+            <div class="progress-spinner"></div>
+            <span>Saving product...</span>
+        </div>
+    </div>
+    
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-primary" onclick="previewProduct()">
+            <i class="fas fa-eye me-2"></i>Preview
+        </button>
+        <button type="submit" form="productForm" class="btn btn-success" id="saveButton">
+            <i class="fas fa-save me-2"></i>Save Product
+        </button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupProfitCalculator();
+    setupImageUpload();
+    setupFormValidation();
+});
+
+function setupProfitCalculator() {
+    const costPriceInput = document.getElementById('id_cost_price');
+    const sellingPriceInput = document.getElementById('id_selling_price');
+    const profitMarginDisplay = document.getElementById('profitMargin');
+    
+    function calculateProfit() {
+        const costPrice = parseFloat(costPriceInput.value) || 0;
+        const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
+        
+        const profit = sellingPrice - costPrice;
+        const margin = costPrice > 0 ? ((profit / costPrice) * 100) : 0;
+        
+        profitMarginDisplay.textContent = `$${profit.toFixed(2)} (${margin.toFixed(1)}%)`;
+        
+        // Color coding
+        if (margin < 10) {
+            profitMarginDisplay.className = 'text-danger fw-bold';
+        } else if (margin < 25) {
+            profitMarginDisplay.className = 'text-warning fw-bold';
+        } else {
+            profitMarginDisplay.className = 'text-success fw-bold';
+        }
+    }
+    
+    if (costPriceInput && sellingPriceInput) {
+        costPriceInput.addEventListener('input', calculateProfit);
+        sellingPriceInput.addEventListener('input', calculateProfit);
+        calculateProfit(); // Initial calculation
+    }
+}
+
+function setupImageUpload() {
+    const uploadArea = document.querySelector('.product-image-upload');
+    const fileInput = document.getElementById('imageUpload');
+    
+    if (!uploadArea || !fileInput) return;
+    
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleImageUpload(files[0]);
+        }
+    });
+    
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleImageUpload(e.target.files[0]);
+        }
+    });
+}
+
+function handleImageUpload(file) {
+    const uploadArea = document.querySelector('.product-image-upload');
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('error', 'Invalid File', 'Please select a valid image file.');
+        }
+        return;
+    }
+    
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('error', 'File Too Large', 'Image must be smaller than 5MB.');
+        }
+        return;
+    }
+    
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        uploadArea.innerHTML = `
+            <img src="${e.target.result}" alt="Product preview" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
+            <div class="upload-hint mt-2">Click to change image</div>
+        `;
+    };
+    reader.readAsDataURL(file);
+}
+
+function setupFormValidation() {
+    const form = document.getElementById('productForm');
+    const saveButton = document.getElementById('saveButton');
+    const progressIndicator = document.querySelector('.form-progress');
+    
+    form.addEventListener('submit', function(e) {
+        // Show loading state
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+        progressIndicator.style.display = 'flex';
+        
+        // Basic validation
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            
+            // Restore button state
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fas fa-save me-2"></i>Save Product';
+            progressIndicator.style.display = 'none';
+            
+            if (window.grocifyUX) {
+                window.grocifyUX.showToast('error', 'Validation Error', 'Please fill in all required fields.');
+            }
+            
+            // Focus first invalid field
+            const firstInvalid = form.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.focus();
+            }
+        }
+    });
+}
+
+function previewProduct() {
+    const form = document.getElementById('productForm');
+    const formData = new FormData(form);
+    
+    const productData = {
+        name: formData.get('name') || 'Untitled Product',
+        description: formData.get('description') || 'No description',
+        costPrice: formData.get('cost_price') || '0.00',
+        sellingPrice: formData.get('selling_price') || '0.00',
+        category: formData.get('category') || 'Uncategorized',
+        company: formData.get('company') || 'Unknown',
+        sku: formData.get('sku') || 'N/A',
+        barcode: formData.get('barcode') || 'N/A'
+    };
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Product Preview', `${productData.name} - $${productData.sellingPrice}`);
+    }
+}
+</script>
 {% endblock %}

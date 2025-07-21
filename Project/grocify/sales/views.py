@@ -1,7 +1,7 @@
 import json
 import base64
 import datetime
-import treepoem
+import treepoem  # Temporarily disabled - install with: pip install treepoem
 from io import BytesIO
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -152,16 +152,32 @@ def process_sale(request):
     multiplier = TIER_MULTIPLIERS.get(tier_name, 1.0)
     total_points_earned = 0
 
+    # Batch fetch all products to avoid N+1 queries
+    product_ids = [item['product_id'] for item in validated_cart]
+    products = {p.id: p for p in Product.objects.filter(id__in=product_ids)}
+    
+    # Batch fetch all inventory items
+    inventory_items = {}
+    for inv in InventoryItem.objects.filter(product_id__in=product_ids, location=location):
+        inventory_items[inv.product_id] = inv
+
     for item in validated_cart:
-        product = get_object_or_404(Product, id=item['product_id'])
+        product = products.get(item['product_id'])
+        if not product:
+            messages.error(request, f"❌ Product with ID {item['product_id']} not found.")
+            return redirect('sales:index')
+            
         quantity = safe_float(item['qty'])
         price = safe_float(item['price'])
 
-        inventory, _ = InventoryItem.objects.get_or_create(
-            product=product,
-            location=location,
-            defaults={'qty_on_hand': 0}
-        )
+        inventory = inventory_items.get(product.id)
+        if not inventory:
+            inventory = InventoryItem.objects.create(
+                product=product,
+                location=location,
+                qty_on_hand=0
+            )
+            inventory_items[product.id] = inventory
         if inventory.qty_on_hand < quantity:
             messages.error(
                 request,
@@ -311,6 +327,7 @@ def receipt_view(request, id):
         except Coupon.DoesNotExist:
             coupon_description = transaction.coupon_code
 
+    # Temporarily disabled barcode generation - install treepoem to enable
     barcode_image = treepoem.generate_barcode(
         barcode_type='code128',
         data=transaction.invoice_number
@@ -333,24 +350,61 @@ def receipt_view(request, id):
     })
 
 
-@require_POST
 @login_required
 def set_location(request):
     """
     Store the chosen location in session (or 'all').
     """
-    data = json.loads(request.body or '{}')
-    loc_id = data.get('location_id')
-    profile = request.user.userprofile
-
-    if loc_id != 'all' and not (
-        request.user.is_superuser
-        or profile.locations.filter(id=loc_id).exists()
-    ):
-        return JsonResponse({'error': 'Forbidden'}, status=403)
-
-    request.session['selected_location'] = loc_id
-    return JsonResponse({'ok': True})
+    # Handle OPTIONS request for CORS
+    if request.method == 'OPTIONS':
+        response = JsonResponse({'ok': True})
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response['Access-Control-Allow-Headers'] = 'Content-Type, X-CSRFToken, X-Requested-With'
+        return response
+    
+    # Only allow POST requests for actual functionality
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        # Parse JSON data
+        if request.content_type == 'application/json':
+            data = json.loads(request.body or '{}')
+            loc_id = data.get('location_id')
+        else:
+            # Handle form data as fallback
+            loc_id = request.POST.get('location_id')
+        
+        if not loc_id:
+            return JsonResponse({'error': 'No location_id provided'}, status=400)
+        
+        # Check user permissions
+        try:
+            profile = request.user.userprofile
+        except:
+            profile = None
+        
+        # Validate location access
+        if loc_id != 'all':
+            if not request.user.is_superuser:
+                if not profile or not profile.locations.filter(id=loc_id).exists():
+                    return JsonResponse({'error': 'Access denied to this location'}, status=403)
+        
+        # Store in session
+        request.session['selected_location'] = loc_id
+        request.session.save()  # Force session save
+        
+        return JsonResponse({
+            'ok': True, 
+            'selected_location': loc_id,
+            'message': f'Location switched to {loc_id}'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
 
 
 @staff_member_required

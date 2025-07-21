@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from decimal import Decimal
 
 class Category(models.Model):
@@ -56,7 +56,12 @@ class Product(models.Model):
 
     name = models.CharField(max_length=100, verbose_name="Product Name")
     company = models.CharField(max_length=100, blank=True, verbose_name="Company Name")
-    sku = models.CharField(max_length=50, unique=True, verbose_name="Barcode")
+    sku = models.CharField(
+        max_length=50, 
+        unique=True, 
+        verbose_name="Barcode",
+        validators=[RegexValidator(r'^[A-Za-z0-9\-_]+$', 'SKU can only contain letters, numbers, hyphens, and underscores')]
+    )
     category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.SET_NULL)
     supplier = models.ForeignKey(Supplier, null=True, blank=True, on_delete=models.SET_NULL)
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
@@ -140,6 +145,11 @@ class StockEntry(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['product', 'location']),
+            models.Index(fields=['created_at', 'location']),
+            models.Index(fields=['entry_type', 'created_at']),
+        ]
 
     def __str__(self):
         display_type = dict(self.ENTRY_TYPES).get(self.entry_type, self.entry_type.title())
@@ -156,6 +166,10 @@ class StockLedger(models.Model):
 
     class Meta:
         ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['product', 'location', 'timestamp']),
+            models.Index(fields=['timestamp']),
+        ]
 
     def __str__(self):
         return f"{self.product.name} @ {self.location.name}: {self.quantity_before} → {self.quantity_after}"

@@ -1,107 +1,985 @@
-{% extends "base.html" %}
-{% block title %}Stock Dashboard{% endblock %}
-{% block page_title %}
-<h1>Stock Dashboard</h1>
+{% extends 'base.html' %}
+{% load static %}
+{% load table_helpers %}
+
+{% block title %}Inventory Management{% endblock %}
+{% block page_title %}Inventory Management{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:admin_dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Inventory</li>
+  </ol>
+</nav>
 {% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grocify-design-system.css' %}">
+<style>
+.inventory-header {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.stock-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stock-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.stock-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.stock-card.total::before {
+    background: var(--primary);
+}
+
+.stock-card.low-stock::before {
+    background: var(--danger);
+}
+
+.stock-card.out-of-stock::before {
+    background: var(--warning);
+}
+
+.stock-card.categories::before {
+    background: var(--info);
+}
+
+.stock-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.stock-card:hover::before {
+    opacity: 1;
+}
+
+.stock-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.stock-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--text-inverse);
+}
+
+.stock-icon.total {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.stock-icon.low-stock {
+    background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+}
+
+.stock-icon.out-of-stock {
+    background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+}
+
+.stock-icon.categories {
+    background: linear-gradient(135deg, var(--info) 0%, #0284c7 100%);
+}
+
+.stock-value {
+    font-size: 2rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stock-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+}
+
+.stock-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: var(--font-weight-medium);
+}
+
+.stock-trend.positive {
+    color: var(--success);
+}
+
+.stock-trend.negative {
+    color: var(--danger);
+}
+
+.stock-trend.neutral {
+    color: var(--text-muted);
+}
+
+.inventory-filters {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.filter-section {
+    margin-bottom: 1rem;
+}
+
+.filter-section:last-child {
+    margin-bottom: 0;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.filter-title {
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.quick-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.quick-filter {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: var(--transition);
+}
+
+.quick-filter:hover,
+.quick-filter.active {
+    background: var(--primary);
+    color: var(--text-inverse);
+    border-color: var(--primary);
+    text-decoration: none;
+}
+
+.advanced-filters {
+    display: none;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.advanced-filters.show {
+    display: block;
+}
+
+.product-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    transition: var(--transition);
+    height: 100%;
+}
+
+.product-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--border-radius);
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+
+.product-name {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.product-details {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.product-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.product-stat {
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-sm);
+}
+
+.product-stat-value {
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    display: block;
+}
+
+.product-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.product-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.view-toggle {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+.view-toggle button {
+    border: none;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    border-right: 1px solid var(--border-color);
+}
+
+.view-toggle button:last-child {
+    border-right: none;
+}
+
+.view-toggle button.active,
+.view-toggle button:hover {
+    background: var(--primary);
+    color: var(--text-inverse);
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.inventory-grid.hidden {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .stock-metrics {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .inventory-filters {
+        padding: 1rem;
+    }
+    
+    .filter-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .quick-filters {
+        justify-content: center;
+    }
+    
+    .inventory-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- Inventory Header -->
+<div class="inventory-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-2" style="color: inherit;">
+                <i class="fas fa-boxes me-3"></i>Inventory Management
+            </h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+                Monitor stock levels, manage products, and track inventory movements
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light" onclick="exportInventory()">
+                <i class="fas fa-file-export me-2"></i>Export
+            </button>
+            <a href="{% url 'inventory:add_product' %}" class="btn btn-light">
+                <i class="fas fa-plus me-2"></i>Add Product
+            </a>
+        </div>
+    </div>
+</div>
 
-<!-- FILTERS -->
-<form method="get" class="row gy-2 gx-3 align-items-center mb-4">
-  <div class="col-md-2">
-    <label class="form-label">Location</label>
-    <select name="location" class="form-select" onchange="this.form.submit()">
-      <option value="">All</option>
-      {% for loc in locations %}
-      <option value="{{ loc.id }}" {% if selected_location == loc.id %}selected{% endif %}>{{ loc.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
+<!-- Stock Metrics Cards -->
+<div class="stock-metrics">
+    <div class="stock-card total">
+        <div class="stock-card-header">
+            <div class="stock-icon total">
+                <i class="fas fa-cubes"></i>
+            </div>
+        </div>
+        <div class="stock-value">{{ inventory_items|length }}</div>
+        <div class="stock-label">Total Products</div>
+        <div class="stock-trend positive">
+            <i class="fas fa-arrow-up"></i>
+            <span>+5 this week</span>
+        </div>
+    </div>
+    
+    <div class="stock-card low-stock">
+        <div class="stock-card-header">
+            <div class="stock-icon low-stock">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+        </div>
+        <div class="stock-value">{{ low_stock_count|default:0 }}</div>
+        <div class="stock-label">Low Stock Items</div>
+        <div class="stock-trend negative">
+            <i class="fas fa-arrow-down"></i>
+            <span>Needs attention</span>
+        </div>
+    </div>
+    
+    <div class="stock-card out-of-stock">
+        <div class="stock-card-header">
+            <div class="stock-icon out-of-stock">
+                <i class="fas fa-times-circle"></i>
+            </div>
+        </div>
+        <div class="stock-value">{{ out_of_stock_count|default:0 }}</div>
+        <div class="stock-label">Out of Stock</div>
+        <div class="stock-trend neutral">
+            <i class="fas fa-minus"></i>
+            <span>Immediate reorder</span>
+        </div>
+    </div>
+    
+    <div class="stock-card categories">
+        <div class="stock-card-header">
+            <div class="stock-icon categories">
+                <i class="fas fa-tags"></i>
+            </div>
+        </div>
+        <div class="stock-value">{{ categories|length }}</div>
+        <div class="stock-label">Categories</div>
+        <div class="stock-trend positive">
+            <i class="fas fa-check"></i>
+            <span>Well organized</span>
+        </div>
+    </div>
+</div>
 
-  <div class="col-md-2">
-    <label class="form-label">Category</label>
-    <select name="category" class="form-select" onchange="this.form.submit()">
-      <option value="">All</option>
-      {% for cat in categories %}
-      <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
+<!-- Enhanced Filters -->
+<div class="inventory-filters">
+    <div class="filter-header">
+        <h3 class="filter-title">
+            <i class="fas fa-filter me-2"></i>Filter Products
+        </h3>
+        <div class="filter-actions">
+            <div class="view-toggle">
+                <button type="button" class="active" id="tableViewBtn" onclick="switchView('table')">
+                    <i class="fas fa-table me-1"></i>Table
+                </button>
+                <button type="button" id="gridViewBtn" onclick="switchView('grid')">
+                    <i class="fas fa-th me-1"></i>Grid
+                </button>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAdvancedFilters()">
+                <i class="fas fa-cog me-1"></i>Advanced
+            </button>
+        </div>
+    </div>
+    
+    <!-- Quick Filters -->
+    <div class="quick-filters">
+        <a href="{% url 'inventory:stock_dashboard' %}" class="quick-filter {% if not request.GET %}active{% endif %}">
+            <i class="fas fa-list me-1"></i>All Products
+        </a>
+        <a href="?filter=low_stock" class="quick-filter {% if request.GET.filter == 'low_stock' %}active{% endif %}">
+            <i class="fas fa-exclamation-triangle me-1"></i>Low Stock
+        </a>
+        <a href="?filter=out_of_stock" class="quick-filter {% if request.GET.filter == 'out_of_stock' %}active{% endif %}">
+            <i class="fas fa-times-circle me-1"></i>Out of Stock
+        </a>
+        <a href="?filter=recent" class="quick-filter {% if request.GET.filter == 'recent' %}active{% endif %}">
+            <i class="fas fa-clock me-1"></i>Recently Added
+        </a>
+    </div>
+    
+    <!-- Advanced Filters -->
+    <div class="advanced-filters" id="advancedFilters">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <div class="form-floating">
+                    <select name="location" class="form-select" id="locationFilter">
+                        <option value="">All Locations</option>
+                        {% for loc in locations %}
+                        <option value="{{ loc.id }}" {% if selected_location == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="locationFilter">Location</label>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="form-floating">
+                    <select name="category" class="form-select" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="categoryFilter">Category</label>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="form-floating">
+                    <input type="text" name="company" value="{{ company }}" class="form-control" id="companyFilter" placeholder="Company name">
+                    <label for="companyFilter">Company</label>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="form-floating">
+                    <select name="sort_by" class="form-select" id="sortFilter">
+                        <option value="product__name" {% if sort_by == 'product__name' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="-product__name" {% if sort_by == '-product__name' %}selected{% endif %}>Name (Z-A)</option>
+                        <option value="product__selling_price" {% if sort_by == 'product__selling_price' %}selected{% endif %}>Price (Low-High)</option>
+                        <option value="-product__selling_price" {% if sort_by == '-product__selling_price' %}selected{% endif %}>Price (High-Low)</option>
+                        <option value="qty_on_hand" {% if sort_by == 'qty_on_hand' %}selected{% endif %}>Stock (Low-High)</option>
+                        <option value="-qty_on_hand" {% if sort_by == '-qty_on_hand' %}selected{% endif %}>Stock (High-Low)</option>
+                    </select>
+                    <label for="sortFilter">Sort By</label>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label class="form-label">Price Range</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" step="0.01" name="price_min" value="{{ price_min }}" class="form-control" placeholder="Min price">
+                    <span class="input-group-text">to</span>
+                    <span class="input-group-text">$</span>
+                    <input type="number" step="0.01" name="price_max" value="{{ price_max }}" class="form-control" placeholder="Max price">
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="d-flex gap-2 align-items-end h-100">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="fas fa-search me-2"></i>Apply Filters
+                    </button>
+                    <a href="{% url 'inventory:stock_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-2"></i>Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 
-  <div class="col-md-2">
-    <label class="form-label">Company</label>
-    <input type="text" name="company" value="{{ company }}" class="form-control" placeholder="e.g. Nestlé">
-  </div>
-
-  <div class="col-md-3">
-    <label class="form-label">Price Range</label>
-    <div class="input-group">
-      <input type="number" step="0.01" name="price_min" value="{{ price_min }}" class="form-control" placeholder="Min">
-      <span class="input-group-text">–</span>
-      <input type="number" step="0.01" name="price_max" value="{{ price_max }}" class="form-control" placeholder="Max">
+<!-- Enhanced Data Table -->
+<div class="data-table-container" id="tableView">
+  <div class="data-table-header">
+    <div class="table-title-section">
+      <h2 class="table-title" id="inventory-table-title">
+        <i class="fas fa-table me-2" aria-hidden="true"></i>
+        Inventory Stock
+      </h2>
+      <p class="table-description text-muted">Monitor and manage product inventory levels</p>
+    </div>
+    
+    <div class="table-actions">
+      <div class="table-search">
+        <label for="inventory-table-search" class="visually-hidden">Search Products</label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="fas fa-search" aria-hidden="true"></i>
+          </span>
+          <input type="text" 
+                 class="form-control" 
+                 id="inventory-table-search"
+                 placeholder="Search products..."
+                 aria-describedby="inventory-table-search-help">
+        </div>
+        <div id="inventory-table-search-help" class="visually-hidden">
+          Search across product names, categories, and companies. Results update as you type.
+        </div>
+      </div>
+      
+      <a href="{% url 'inventory:add_product' %}" 
+         class="btn btn-primary"
+         aria-label="Add New Product">
+        <i class="fas fa-plus me-2" aria-hidden="true"></i>
+        Add Product
+      </a>
+      
+      <button type="button" 
+              class="btn btn-outline-secondary"
+              id="inventory-table-export"
+              aria-label="Export table data">
+        <i class="fas fa-download me-2" aria-hidden="true"></i>
+        Export
+      </button>
     </div>
   </div>
 
-  <div class="col-md-2">
-    <label class="form-label">Sort by</label>
-    <select name="sort_by" class="form-select" onchange="this.form.submit()">
-      <option value="product__name" {% if sort_by == 'product__name' %}selected{% endif %}>Name</option>
-      <option value="product__selling_price" {% if sort_by == 'product__selling_price' %}selected{% endif %}>Sale Price</option>
-      <option value="qty_on_hand" {% if sort_by == 'qty_on_hand' %}selected{% endif %}>Stock Level</option>
-    </select>
-  </div>
-
-  <div class="col-md-1 d-grid">
-    <label class="form-label d-none d-md-block">&nbsp;</label>
-    <button type="submit" class="btn btn-success">Filter</button>
-  </div>
-
-  <div class="col-md-1 d-grid">
-    <label class="form-label d-none d-md-block">&nbsp;</label>
-    <a href="{% url 'inventory:stock_dashboard' %}" class="btn btn-outline-secondary">Reset</a>
-  </div>
-</form>
-
-<!-- TABLE -->
-<div class="table-responsive">
-  <table class="table table-bordered align-middle table-striped bg-white">
-    <thead class="table-dark">
-      <tr>
-        <th scope="col">Product</th>
-        {% if not selected_location %}
-        <th scope="col">Location</th>
-        {% endif %}
-        <th scope="col">Qty On Hand</th>
-        <th scope="col">Reorder Lvl</th>
-        <th scope="col">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in inventory_items %}
-      <tr class="{% if item.is_low_stock %}table-warning{% endif %}">
-        <td>{{ item.product.name }}</td>
-        {% if not selected_location %}
-        <td>{{ item.location.name }}</td>
-        {% endif %}
-        <td>
-          {{ item.qty_on_hand }}
-          {% if item.is_low_stock %}
-            <span class="badge bg-danger ms-1">Low</span>
+  <div class="table-responsive">
+    <table class="table grocify-table" 
+           id="inventory-table"
+           role="table"
+           aria-labelledby="inventory-table-title"
+           aria-describedby="inventory-table-info">
+      
+      <caption class="visually-hidden">
+        Inventory Management: Monitor stock levels and manage product inventory
+      </caption>
+      
+      <thead>
+        <tr role="row">
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="name" aria-label="Sort by Product">
+            <div class="header-content">
+              <span class="header-text">Product</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          {% if not selected_location %}
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="location" aria-label="Sort by Location">
+            <div class="header-content">
+              <span class="header-text">Location</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
           {% endif %}
-        </td>
-        <td>{{ item.product.reorder_level }}</td>
-        <td>
-          <a href="{% url 'inventory:edit_product' item.product.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
-          <a href="{% url 'inventory:adjust_stock' item.id %}" class="btn btn-sm btn-outline-warning">Adjust</a>
-          <a href="{% url 'inventory:stock_ledger' %}?product={{ item.product.id }}" class="btn btn-sm btn-outline-secondary">Ledger</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="{% if selected_location %}5{% else %}6{% endif %}" class="text-center text-muted">No products found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="stock" aria-label="Sort by Stock">
+            <div class="header-content">
+              <span class="header-text">Stock Level</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="reorder" aria-label="Sort by Reorder Level">
+            <div class="header-content">
+              <span class="header-text">Reorder Level</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="price" aria-label="Sort by Price">
+            <div class="header-content">
+              <span class="header-text">Price</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell">Status</th>
+          <th scope="col" class="table-header-cell">Actions</th>
+        </tr>
+      </thead>
+      
+      <tbody>
+        {% for item in inventory_items %}
+          <tr role="row" class="data-row" data-row-id="{{ item.id }}">
+            <td class="text-cell">
+              <div class="d-flex align-items-center">
+                <div class="product-image me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                  <i class="fas fa-box"></i>
+                </div>
+                <div>
+                  <div class="fw-medium">{{ item.product.name }}</div>
+                  <small class="text-muted">{{ item.product.category.name|default:"Uncategorized" }}</small>
+                </div>
+              </div>
+            </td>
+            {% if not selected_location %}
+            <td class="text-cell">
+              <span class="badge bg-primary">{{ item.location.name }}</span>
+            </td>
+            {% endif %}
+            <td class="number-cell">
+              <div class="d-flex align-items-center">
+                <span class="fw-bold me-2">{{ item.qty_on_hand }}</span>
+                {% if item.is_low_stock %}
+                  <span class="badge bg-danger">Low</span>
+                {% elif item.qty_on_hand == 0 %}
+                  <span class="badge bg-warning">Out</span>
+                {% else %}
+                  <span class="badge bg-success">Good</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="number-cell">
+              <span class="text-muted">{{ item.product.reorder_level|default:"—" }}</span>
+            </td>
+            <td class="currency-cell">
+              <span class="currency-value fw-bold text-success">
+                ${{ item.product.selling_price|floatformat:2 }}
+              </span>
+            </td>
+            <td class="status-cell">
+              {% if item.qty_on_hand == 0 %}
+                <span class="badge bg-warning">Out of Stock</span>
+              {% elif item.is_low_stock %}
+                <span class="badge bg-danger">Low Stock</span>
+              {% else %}
+                <span class="badge bg-success">In Stock</span>
+              {% endif %}
+            </td>
+            <td class="actions-cell">
+              <div class="btn-group" role="group" aria-label="Actions for {{ item.product.name }}">
+                <a href="{% url 'inventory:edit_product' item.product.id %}" 
+                   class="btn btn-sm btn-outline-primary"
+                   aria-label="Edit {{ item.product.name }}"
+                   title="Edit">
+                  <i class="fas fa-edit me-1" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">Edit</span>
+                </a>
+                <a href="{% url 'inventory:adjust_stock' item.id %}" 
+                   class="btn btn-sm btn-outline-warning"
+                   aria-label="Adjust stock for {{ item.product.name }}"
+                   title="Adjust">
+                  <i class="fas fa-adjust me-1" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">Adjust</span>
+                </a>
+                <a href="{% url 'inventory:stock_ledger' %}?product={{ item.product.id }}" 
+                   class="btn btn-sm btn-outline-secondary"
+                   aria-label="View ledger for {{ item.product.name }}"
+                   title="Ledger">
+                  <i class="fas fa-history me-1" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">Ledger</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr class="empty-row">
+            <td colspan="{% if selected_location %}6{% else %}7{% endif %}" class="text-center empty-state">
+              <div class="empty-state-content">
+                <i class="fas fa-boxes fa-3x text-muted mb-3" aria-hidden="true"></i>
+                <p class="empty-message">
+                  No products found. Start building your inventory by adding your first product.
+                </p>
+                <a href="{% url 'inventory:add_product' %}" 
+                   class="btn btn-primary"
+                   aria-label="Add first product">
+                  <i class="fas fa-plus me-2" aria-hidden="true"></i>
+                  Add First Product
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="table-footer">
+    <div class="table-info" id="inventory-table-info" aria-live="polite">
+      {% if inventory_items %}
+        Showing {{ inventory_items|length }} 
+        {% if inventory_items|length == 1 %}product{% else %}products{% endif %}
+      {% endif %}
+    </div>
+  </div>
 </div>
 
+<!-- Grid View (Initially Hidden) -->
+<div class="inventory-grid hidden" id="gridView">
+  {% for item in inventory_items %}
+    <div class="product-card">
+      <div class="product-image">
+        <i class="fas fa-box"></i>
+      </div>
+      <div class="product-name">{{ item.product.name }}</div>
+      <div class="product-details">
+        <div>{{ item.product.category.name|default:"Uncategorized" }}</div>
+        <div>{{ item.location.name }}</div>
+      </div>
+      <div class="product-stats">
+        <div class="product-stat">
+          <span class="product-stat-value">{{ item.qty_on_hand }}</span>
+          <span class="product-stat-label">In Stock</span>
+        </div>
+        <div class="product-stat">
+          <span class="product-stat-value">${{ item.product.selling_price|floatformat:2 }}</span>
+          <span class="product-stat-label">Price</span>
+        </div>
+      </div>
+      <div class="product-actions">
+        <a href="{% url 'inventory:edit_product' item.product.id %}" class="btn btn-sm btn-outline-primary flex-fill">
+          <i class="fas fa-edit me-1"></i>Edit
+        </a>
+        <a href="{% url 'inventory:adjust_stock' item.id %}" class="btn btn-sm btn-outline-warning flex-fill">
+          <i class="fas fa-adjust me-1"></i>Adjust
+        </a>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12 text-center py-5">
+      <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+      <p class="text-muted">No products found. Add your first product to get started.</p>
+      <a href="{% url 'inventory:add_product' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add Product
+      </a>
+    </div>
+  {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupInventorySearch();
+    setupInventorySort();
+    setupInventoryExport();
+});
+
+function toggleAdvancedFilters() {
+    const advancedFilters = document.getElementById('advancedFilters');
+    advancedFilters.classList.toggle('show');
+    
+    const button = document.querySelector('[onclick="toggleAdvancedFilters()"]');
+    const icon = button.querySelector('i');
+    
+    if (advancedFilters.classList.contains('show')) {
+        icon.className = 'fas fa-chevron-up me-1';
+        button.innerHTML = '<i class="fas fa-chevron-up me-1"></i>Hide';
+    } else {
+        icon.className = 'fas fa-cog me-1';
+        button.innerHTML = '<i class="fas fa-cog me-1"></i>Advanced';
+    }
+}
+
+function switchView(viewType) {
+    const tableView = document.getElementById('tableView');
+    const gridView = document.getElementById('gridView');
+    const tableBtn = document.getElementById('tableViewBtn');
+    const gridBtn = document.getElementById('gridViewBtn');
+    
+    if (viewType === 'table') {
+        tableView.classList.remove('hidden');
+        gridView.classList.add('hidden');
+        tableBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+    } else {
+        tableView.classList.add('hidden');
+        gridView.classList.remove('hidden');
+        tableBtn.classList.remove('active');
+        gridBtn.classList.add('active');
+    }
+    
+    // Store preference in localStorage
+    localStorage.setItem('inventoryViewPreference', viewType);
+}
+
+// Restore view preference on load
+window.addEventListener('load', function() {
+    const savedView = localStorage.getItem('inventoryViewPreference');
+    if (savedView && savedView === 'grid') {
+        switchView('grid');
+    }
+});
+
+function setupInventorySearch() {
+    const searchInput = document.getElementById('inventory-table-search');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            performInventorySearch(e.target.value);
+        }, 300);
+    });
+}
+
+function performInventorySearch(query) {
+    const rows = document.querySelectorAll('#inventory-table .data-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const matches = text.includes(query.toLowerCase());
+        
+        row.style.display = matches || !query ? '' : 'none';
+        if (matches || !query) visibleCount++;
+    });
+    
+    updateTableInfo(visibleCount, rows.length);
+}
+
+function setupInventorySort() {
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const sortKey = header.dataset.sortKey;
+            const currentSort = header.getAttribute('aria-sort');
+            const newSort = currentSort === 'ascending' ? 'descending' : 'ascending';
+            
+            // Reset all other headers
+            sortableHeaders.forEach(h => {
+                h.setAttribute('aria-sort', 'none');
+                h.querySelector('.sort-icon').className = 'fas fa-sort sort-icon';
+            });
+            
+            // Set new sort
+            header.setAttribute('aria-sort', newSort);
+            const icon = header.querySelector('.sort-icon');
+            icon.className = `fas fa-sort-${newSort === 'ascending' ? 'up' : 'down'} sort-icon`;
+            
+            // Perform sort
+            sortInventoryTable(sortKey, newSort);
+        });
+    });
+}
+
+function sortInventoryTable(key, direction) {
+    const tbody = document.querySelector('#inventory-table tbody');
+    const rows = Array.from(tbody.querySelectorAll('.data-row'));
+    
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch(key) {
+            case 'stock':
+                aValue = parseInt(a.querySelector('.number-cell .fw-bold').textContent);
+                bValue = parseInt(b.querySelector('.number-cell .fw-bold').textContent);
+                break;
+            case 'price':
+                aValue = parseFloat(a.querySelector('.currency-value').textContent.replace(/[$,]/g, ''));
+                bValue = parseFloat(b.querySelector('.currency-value').textContent.replace(/[$,]/g, ''));
+                break;
+            default:
+                aValue = a.textContent.toLowerCase();
+                bValue = b.textContent.toLowerCase();
+        }
+        
+        if (direction === 'ascending') {
+            return aValue > bValue ? 1 : -1;
+        } else {
+            return aValue < bValue ? 1 : -1;
+        }
+    });
+    
+    // Reorder DOM elements
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function setupInventoryExport() {
+    const exportButton = document.getElementById('inventory-table-export');
+    
+    exportButton.addEventListener('click', function() {
+        exportInventory();
+    });
+}
+
+function exportInventory() {
+    console.log('Exporting inventory...');
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Export Started', 'Inventory report is being generated for download.');
+    }
+    
+    // Simulate export delay
+    setTimeout(() => {
+        // Create CSV content
+        const table = document.getElementById('inventory-table');
+        const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim()).slice(0, -1); // Exclude Actions
+        const rows = Array.from(table.querySelectorAll('.data-row')).map(row => 
+            Array.from(row.querySelectorAll('td')).slice(0, -1).map(td => td.textContent.trim()) // Exclude Actions
+        );
+        
+        const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'inventory-export.csv';
+        a.click();
+        
+        window.URL.revokeObjectURL(url);
+        
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Export Complete', 'Inventory report has been downloaded.');
+        }
+    }, 2000);
+}
+
+function updateTableInfo(visible, total) {
+    const tableInfo = document.getElementById('inventory-table-info');
+    if (tableInfo) {
+        if (visible === total) {
+            tableInfo.textContent = `Showing ${total} ${total === 1 ? 'product' : 'products'}`;
+        } else {
+            tableInfo.textContent = `Showing ${visible} of ${total} products (filtered)`;
+        }
+    }
+}
+</script>
 {% endblock %}

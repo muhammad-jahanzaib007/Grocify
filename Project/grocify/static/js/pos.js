@@ -197,31 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-/* Optional Analytics Tracking */
-function sendAnalyticsEvent(eventName, eventData) {
-  fetch('/api/analytics/event/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ event: eventName, data: eventData })
-  })
-  .then(response => response.json())
-  .then(data => console.log('Analytics event sent:', data))
-  .catch(error => console.error('Error sending analytics event:', error));
-}
-
-if (typeof completeSale === 'function') {
-  var originalCompleteSale = completeSale;
-  completeSale = function() {
-    originalCompleteSale.apply(this, arguments);
-    var saleValue = document.getElementById('sale-amount') ? parseFloat(document.getElementById('sale-amount').innerText) : 0;
-    sendAnalyticsEvent('sale_completed', { amount: saleValue });
-  };
-} else {
-  var completeSaleButton = document.getElementById('complete-sale');
-  if (completeSaleButton) {
-    completeSaleButton.addEventListener('click', function() {
-      var saleValue = document.getElementById('sale-amount') ? parseFloat(document.getElementById('sale-amount').innerText) : 0;
-      sendAnalyticsEvent('sale_completed', { amount: saleValue });
-    });
-  }
-}
+/* POS Analytics Integration (Future Implementation) */
+// Note: Analytics tracking can be added here when analytics endpoints are implemented
+// Example: Track successful sales, cart modifications, popular products, etc.

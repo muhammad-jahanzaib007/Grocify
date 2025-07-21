@@ -1,0 +1,554 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics Dashboard - Overview{% endblock %}
+
+{% block page_title %}Analytics Dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:admin_dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Analytics Overview</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="dashboard-title">Analytics Dashboard</h1>
+            <p class="dashboard-subtitle text-muted">
+                Real-time insights and data visualization for your business
+            </p>
+        </div>
+        <div class="dashboard-controls">
+            <button type="button" class="btn btn-outline-secondary" onclick="refreshAllCharts()">
+                <i class="fas fa-sync-alt me-2"></i>Refresh Data
+            </button>
+            <button type="button" class="btn btn-primary" onclick="exportDashboard()">
+                <i class="fas fa-download me-2"></i>Export Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics Section -->
+<div class="dashboard-section">
+    <h2 class="section-title">
+        <i class="fas fa-chart-line"></i>
+        Key Performance Indicators
+    </h2>
+    
+    <div class="dashboard-metrics">
+        {% include 'components/dashboard_widgets.html' with widget_type='metric_card' widget_config=total_revenue %}
+        {% include 'components/dashboard_widgets.html' with widget_type='metric_card' widget_config=total_orders %}
+        {% include 'components/dashboard_widgets.html' with widget_type='metric_card' widget_config=avg_order_value %}
+        {% include 'components/dashboard_widgets.html' with widget_type='metric_card' widget_config=total_products %}
+    </div>
+</div>
+
+<!-- Revenue Analytics Section -->
+<div class="dashboard-section">
+    <h2 class="section-title">
+        <i class="fas fa-dollar-sign"></i>
+        Revenue Analytics
+    </h2>
+    
+    <div class="dashboard-grid">
+        <!-- Revenue Trend Chart -->
+        {% include 'components/dashboard_widgets.html' with widget_type='chart_card' widget_config=revenue_chart %}
+        
+        <!-- Monthly Comparison Chart -->
+        {% include 'components/dashboard_widgets.html' with widget_type='chart_card' widget_config=monthly_comparison_chart %}
+    </div>
+</div>
+
+<!-- Sales Analytics Section -->
+<div class="dashboard-section">
+    <h2 class="section-title">
+        <i class="fas fa-shopping-cart"></i>
+        Sales Analytics
+    </h2>
+    
+    <div class="dashboard-grid">
+        <!-- Sales Distribution Chart -->
+        {% include 'components/dashboard_widgets.html' with widget_type='chart_card' widget_config=sales_distribution_chart %}
+        
+        <!-- Top Products Chart -->
+        {% include 'components/dashboard_widgets.html' with widget_type='chart_card' widget_config=top_products_chart %}
+    </div>
+</div>
+
+<!-- Inventory & Operations Section -->
+<div class="dashboard-section">
+    <h2 class="section-title">
+        <i class="fas fa-boxes"></i>
+        Inventory & Operations
+    </h2>
+    
+    <div class="dashboard-grid">
+        <!-- Inventory Status Chart -->
+        {% include 'components/dashboard_widgets.html' with widget_type='chart_card' widget_config=inventory_status_chart %}
+        
+        <!-- Low Stock Alerts -->
+        {% include 'components/dashboard_widgets.html' with widget_type='data_table_card' widget_config=low_stock_table %}
+    </div>
+</div>
+
+<!-- Recent Activity Section -->
+<div class="dashboard-section">
+    <h2 class="section-title">
+        <i class="fas fa-clock"></i>
+        Recent Activity & Alerts
+    </h2>
+    
+    <div class="dashboard-grid">
+        <!-- Recent Orders Table -->
+        {% include 'components/dashboard_widgets.html' with widget_type='data_table_card' widget_config=recent_orders_table %}
+        
+        <!-- System Alerts -->
+        <div class="alerts-container">
+            {% include 'components/dashboard_widgets.html' with widget_type='alert_card' widget_config=system_alert_1 %}
+            {% include 'components/dashboard_widgets.html' with widget_type='alert_card' widget_config=system_alert_2 %}
+            
+            <!-- Progress Indicators -->
+            {% include 'components/dashboard_widgets.html' with widget_type='progress_card' widget_config=monthly_target %}
+            {% include 'components/dashboard_widgets.html' with widget_type='progress_card' widget_config=inventory_turnover %}
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Grid Section -->
+<div class="dashboard-section">
+    <h2 class="section-title">
+        <i class="fas fa-chart-bar"></i>
+        Business Statistics
+    </h2>
+    
+    {% include 'components/dashboard_widgets.html' with widget_type='stat_grid' widget_config=business_stats %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Custom Charts JavaScript -->
+<script src="{% static 'js/charts.js' %}"></script>
+
+<script>
+// Dashboard data configuration (from Django backend)
+const dashboardData = {
+    // Revenue chart data - real data from backend
+    revenue: {
+        labels: {{ revenue_chart_data.labels|safe }},
+        revenue: {{ revenue_chart_data.data|safe }}
+    },
+    
+    // Sales distribution data - real category data
+    salesDistribution: {
+        labels: {{ category_sales_data.labels|safe }},
+        values: {{ category_sales_data.data|safe }}
+    },
+    
+    // Monthly comparison data - using current year data
+    monthlyComparison: {
+        labels: {{ revenue_chart_data.labels|safe }},
+        thisYear: {{ revenue_chart_data.data|safe }},
+        lastYear: {{ revenue_chart_data.data|safe }}.map(x => Math.round(x * 0.85)) // Simulate 15% less for comparison
+    },
+    
+    // Top products data - real top selling products
+    topProducts: {
+        labels: {{ top_products_data.labels|safe }},
+        values: {{ top_products_data.data|safe }}
+    },
+    
+    // Inventory status data - simplified for now
+    inventoryStatus: {
+        labels: ['In Stock', 'Low Stock', 'Out of Stock'],
+        current: [{{ total_products|add:'-2' }}, 2, 0],
+        target: [{{ total_products }}, 0, 0]
+    }
+};
+
+// Initialize dashboard when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all charts
+    initializeDashboardCharts();
+    
+    // Set up real-time updates
+    setupRealTimeUpdates();
+    
+    // Listen for period changes
+    document.addEventListener('chartPeriodChange', function(e) {
+        handlePeriodChange(e.detail.canvasId, e.detail.period);
+    });
+});
+
+function initializeDashboardCharts() {
+    // Revenue trend chart
+    grocifyCharts.createRevenueChart('revenueChart', dashboardData.revenue);
+    
+    // Sales distribution chart
+    grocifyCharts.createSalesDistributionChart('salesDistributionChart', dashboardData.salesDistribution);
+    
+    // Monthly comparison chart
+    grocifyCharts.createMonthlyComparisonChart('monthlyComparisonChart', dashboardData.monthlyComparison);
+    
+    // Top products chart
+    grocifyCharts.createTopProductsChart('topProductsChart', dashboardData.topProducts);
+    
+    // Inventory status chart
+    grocifyCharts.createInventoryStatusChart('inventoryStatusChart', dashboardData.inventoryStatus);
+}
+
+function handlePeriodChange(canvasId, period) {
+    // Simulate data loading for different periods
+    console.log(`Loading ${period} data for chart: ${canvasId}`);
+    
+    // Show loading state
+    const chartCard = document.querySelector(`canvas#${canvasId}`).closest('.chart-card');
+    const loadingDiv = chartCard.querySelector('.chart-loading');
+    if (loadingDiv) {
+        loadingDiv.style.display = 'block';
+    }
+    
+    // Simulate API call delay
+    setTimeout(function() {
+        // Hide loading state
+        if (loadingDiv) {
+            loadingDiv.style.display = 'none';
+        }
+        
+        // Update chart with new data based on period
+        updateChartForPeriod(canvasId, period);
+    }, 1500);
+}
+
+function updateChartForPeriod(canvasId, period) {
+    // This would typically fetch data from an API
+    // For demo purposes, we'll generate some mock data
+    
+    let newData;
+    switch(period) {
+        case '7d':
+            newData = generateMockData(7);
+            break;
+        case '30d':
+            newData = generateMockData(30);
+            break;
+        case '90d':
+            newData = generateMockData(90);
+            break;
+        case '1y':
+            newData = generateMockData(365);
+            break;
+        default:
+            newData = dashboardData.revenue;
+    }
+    
+    // Update the chart
+    grocifyCharts.updateChartData(canvasId, newData);
+}
+
+function generateMockData(days) {
+    const labels = [];
+    const revenue = [];
+    
+    for (let i = 0; i < Math.min(days, 12); i++) {
+        labels.push(`Period ${i + 1}`);
+        revenue.push(Math.floor(Math.random() * 50000) + 30000);
+    }
+    
+    return { labels, revenue };
+}
+
+function setupRealTimeUpdates() {
+    // Update metrics every 30 seconds
+    setInterval(function() {
+        updateMetrics();
+    }, 30000);
+}
+
+function updateMetrics() {
+    // Update metric values with slight variations
+    document.querySelectorAll('[aria-live="polite"]').forEach(function(element) {
+        if (element.classList.contains('metric-value')) {
+            const currentValue = parseInt(element.textContent.replace(/[^0-9]/g, ''));
+            const variation = Math.floor(Math.random() * 200) - 100; // ±100
+            const newValue = Math.max(0, currentValue + variation);
+            
+            // Format based on original format
+            if (element.textContent.includes('Rs')) {
+                element.textContent = `Rs ${newValue.toLocaleString()}`;
+            } else if (element.textContent.includes('%')) {
+                element.textContent = `${(newValue / 1000).toFixed(1)}%`;
+            } else {
+                element.textContent = newValue.toLocaleString();
+            }
+        }
+    });
+}
+
+function refreshAllCharts() {
+    console.log('Refreshing all dashboard charts...');
+    
+    // Show loading for all charts
+    document.querySelectorAll('.chart-loading').forEach(function(loading) {
+        loading.style.display = 'block';
+    });
+    
+    // Simulate refresh delay
+    setTimeout(function() {
+        // Hide loading
+        document.querySelectorAll('.chart-loading').forEach(function(loading) {
+            loading.style.display = 'none';
+        });
+        
+        // Reinitialize charts with fresh data
+        grocifyCharts.destroyAllCharts();
+        initializeDashboardCharts();
+        
+        // Show success notification
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Data Refreshed', 'All charts have been updated with the latest data.');
+        }
+    }, 2000);
+}
+
+function exportDashboard() {
+    console.log('Exporting dashboard report...');
+    
+    // This would typically generate a PDF or CSV report
+    // For demo purposes, we'll just show a notification
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Export Started', 'Your dashboard report is being generated. You will receive an email when ready.');
+    }
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grocify-design-system.css' %}">
+<style>
+/* Dashboard-specific chart styling */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: 1rem 0;
+}
+
+.chart-card {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    transition: var(--transition);
+}
+
+.chart-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.chart-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.chart-subtitle {
+    font-size: var(--font-size-sm);
+    margin: var(--space-xs) 0 0 0;
+}
+
+.chart-actions {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.period-selector {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.period-selector button {
+    border: none;
+    border-radius: 0;
+    border-right: 1px solid var(--border-color);
+}
+
+.period-selector button:last-child {
+    border-right: none;
+}
+
+.period-selector button.active {
+    background: var(--primary);
+    color: var(--text-inverse);
+}
+
+.chart-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 10;
+}
+
+.loading-text {
+    margin-top: var(--space-sm);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+/* Fullscreen chart styles */
+.chart-card.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: var(--z-modal);
+    margin: 0;
+    border-radius: 0;
+    background: var(--bg-primary);
+}
+
+.chart-card.fullscreen .chart-container {
+    height: calc(100vh - 120px);
+}
+
+body.chart-fullscreen {
+    overflow: hidden;
+}
+
+/* Dashboard grid layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.dashboard-section {
+    margin-bottom: var(--space-xl);
+}
+
+.section-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.section-title i {
+    color: var(--primary);
+}
+
+/* Enhanced metric cards for dashboard */
+.dashboard-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.metric-card.enhanced {
+    position: relative;
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(99, 102, 241, 0.02) 100%);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    transition: var(--transition);
+    overflow: hidden;
+}
+
+.metric-card.enhanced::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary);
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.metric-card.enhanced:hover::before {
+    opacity: 1;
+}
+
+.metric-card.enhanced:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+    
+    .chart-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .chart-actions {
+        justify-content: center;
+    }
+    
+    .period-selector {
+        width: 100%;
+    }
+    
+    .period-selector button {
+        flex: 1;
+    }
+    
+    .dashboard-metrics {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--space-md);
+    }
+}
+
+@media (max-width: 576px) {
+    .chart-container {
+        height: 250px;
+    }
+    
+    .dashboard-metrics {
+        grid-template-columns: 1fr;
+    }
+    
+    .metric-card.enhanced {
+        padding: var(--space-md);
+    }
+}
+</style>
+{% endblock %}

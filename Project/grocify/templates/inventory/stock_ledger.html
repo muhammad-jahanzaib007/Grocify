@@ -1,86 +1,772 @@
-{% extends "base.html" %}
-{% block title %}Stock Ledger{% endblock %}
-{% block page_title %}
-<h1>Stock Movement Ledger</h1>
+{% extends 'base.html' %}
+{% load static %}
+{% load table_helpers %}
+
+{% block title %}Stock Movement Ledger{% endblock %}
+{% block page_title %}Stock Movement Ledger{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:admin_dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'inventory:stock_dashboard' %}">Inventory</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Stock Ledger</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grocify-design-system.css' %}">
+<style>
+.ledger-header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.ledger-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.stat-card.entries::before {
+    background: var(--primary);
+}
+
+.stat-card.increases::before {
+    background: var(--success);
+}
+
+.stat-card.decreases::before {
+    background: var(--danger);
+}
+
+.stat-card.today::before {
+    background: var(--warning);
+}
+
+.stat-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.stat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.stat-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: var(--text-inverse);
+}
+
+.stat-icon.entries {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.stat-icon.increases {
+    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+}
+
+.stat-icon.decreases {
+    background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+}
+
+.stat-icon.today {
+    background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-muted);
+}
+
+.ledger-filters {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.filter-title {
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.entry-type-badge {
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-medium);
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--border-radius-sm);
+}
+
+.entry-type-sale {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.entry-type-purchase {
+    background: var(--success-bg);
+    color: var(--success);
+}
+
+.entry-type-adjustment {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.entry-type-return {
+    background: var(--info-bg);
+    color: var(--info);
+}
+
+.quantity-change {
+    font-weight: var(--font-weight-bold);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.quantity-change.positive {
+    color: var(--success);
+}
+
+.quantity-change.negative {
+    color: var(--danger);
+}
+
+.quantity-change.neutral {
+    color: var(--text-muted);
+}
+
+.timeline-entry {
+    border-left: 3px solid var(--border-color);
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.timeline-entry::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 0.5rem;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+}
+
+.timeline-entry.increase {
+    border-left-color: var(--success);
+}
+
+.timeline-entry.increase::before {
+    border-color: var(--success);
+    background: var(--success);
+}
+
+.timeline-entry.decrease {
+    border-left-color: var(--danger);
+}
+
+.timeline-entry.decrease::before {
+    border-color: var(--danger);
+    background: var(--danger);
+}
+
+@media (max-width: 768px) {
+    .ledger-stats {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .ledger-filters {
+        padding: 1rem;
+    }
+    
+    .filter-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .ledger-header {
+        padding: 1.5rem;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="card p-4 shadow-sm mb-4">
-  <form method="get" class="row gy-2 gx-3 align-items-end">
-    <div class="col-md-4">
-      <label class="form-label">Product</label>
-      <input type="text" name="product" placeholder="e.g. Rice" value="{{ request.GET.product }}" class="form-control">
+<!-- Ledger Header -->
+<div class="ledger-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-2" style="color: inherit;">
+                <i class="fas fa-history me-3"></i>Stock Movement Ledger
+            </h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+                Track all inventory movements and stock changes across locations
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light" onclick="exportLedger()">
+                <i class="fas fa-file-export me-2"></i>Export
+            </button>
+            <button type="button" class="btn btn-light" onclick="refreshLedger()">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+        </div>
     </div>
-
-    <div class="col-md-3">
-      <label class="form-label">Location</label>
-      <select name="location" class="form-select">
-        <option value="">All</option>
-        {% for loc in locations %}
-        <option value="{{ loc.id }}" {% if request.GET.location == loc.id|stringformat:"s" %}selected{% endif %}>
-          {{ loc.name }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col-md-3">
-      <label class="form-label">Type</label>
-      <select name="entry_type" class="form-select">
-        <option value="">All</option>
-        {% for code, label in entry_types %}
-        <option value="{{ code }}" {% if request.GET.entry_type == code %}selected{% endif %}>
-          {{ label }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col-md-2 d-grid">
-      <label class="form-label d-none d-md-block">&nbsp;</label>
-      <button type="submit" class="btn btn-success">Filter</button>
-    </div>
-  </form>
 </div>
 
-<div class="table-responsive">
-  <table class="table table-bordered table-striped align-middle bg-white">
-    <thead class="table-dark">
-      <tr>
-        <th>Timestamp</th>
-        <th>Product</th>
-        <th>Location</th>
-        <th>Before</th>
-        <th>Change</th>
-        <th>After</th>
-        <th>Type</th>
-        <th>Note</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for entry in ledger_entries %}
-      <tr>
-        <td>{{ entry.timestamp }}</td>
-        <td>{{ entry.product.name }}</td>
-        <td>{{ entry.location.name }}</td>
-        <td>{{ entry.quantity_before }}</td>
-        <td>
-          {% if entry.quantity_changed > 0 %}
-            <span class="text-success">+{{ entry.quantity_changed }}</span>
-          {% else %}
-            <span class="text-danger">{{ entry.quantity_changed }}</span>
-          {% endif %}
-        </td>
-        <td>{{ entry.quantity_after }}</td>
-        <td>{{ entry.related_entry.get_entry_type_display }}</td>
-        <td>{{ entry.related_entry.note }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="8" class="text-center text-muted">No ledger entries found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<!-- Ledger Statistics -->
+<div class="ledger-stats">
+    <div class="stat-card entries">
+        <div class="stat-card-header">
+            <div class="stat-icon entries">
+                <i class="fas fa-list"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ ledger_entries|length }}</div>
+        <div class="stat-label">Total Entries</div>
+        <div class="stat-trend">
+            <i class="fas fa-clock"></i>
+            <span>All time</span>
+        </div>
+    </div>
+    
+    <div class="stat-card increases">
+        <div class="stat-card-header">
+            <div class="stat-icon increases">
+                <i class="fas fa-arrow-up"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ increases_count|default:0 }}</div>
+        <div class="stat-label">Stock Increases</div>
+        <div class="stat-trend">
+            <i class="fas fa-plus"></i>
+            <span>Purchases & returns</span>
+        </div>
+    </div>
+    
+    <div class="stat-card decreases">
+        <div class="stat-card-header">
+            <div class="stat-icon decreases">
+                <i class="fas fa-arrow-down"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ decreases_count|default:0 }}</div>
+        <div class="stat-label">Stock Decreases</div>
+        <div class="stat-trend">
+            <i class="fas fa-minus"></i>
+            <span>Sales & adjustments</span>
+        </div>
+    </div>
+    
+    <div class="stat-card today">
+        <div class="stat-card-header">
+            <div class="stat-icon today">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ today_entries_count|default:0 }}</div>
+        <div class="stat-label">Today's Entries</div>
+        <div class="stat-trend">
+            <i class="fas fa-clock"></i>
+            <span>Last 24 hours</span>
+        </div>
+    </div>
 </div>
+
+<!-- Enhanced Filters -->
+<div class="ledger-filters">
+    <div class="filter-header">
+        <h3 class="filter-title">
+            <i class="fas fa-filter me-2"></i>Filter Ledger Entries
+        </h3>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFilters()">
+            <i class="fas fa-undo me-1"></i>Reset
+        </button>
+    </div>
+    
+    <form method="get" class="row g-3">
+        <div class="col-md-3">
+            <div class="form-floating">
+                <input type="text" name="product" value="{{ request.GET.product }}" class="form-control" id="productFilter" placeholder="Product name">
+                <label for="productFilter">Product</label>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="form-floating">
+                <select name="location" class="form-select" id="locationFilter">
+                    <option value="">All Locations</option>
+                    {% for loc in locations %}
+                    <option value="{{ loc.id }}" {% if request.GET.location == loc.id|stringformat:"s" %}selected{% endif %}>
+                        {{ loc.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <label for="locationFilter">Location</label>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="form-floating">
+                <select name="entry_type" class="form-select" id="entryTypeFilter">
+                    <option value="">All Types</option>
+                    {% for code, label in entry_types %}
+                    <option value="{{ code }}" {% if request.GET.entry_type == code %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <label for="entryTypeFilter">Entry Type</label>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="d-flex gap-2 align-items-end h-100">
+                <button type="submit" class="btn btn-primary flex-fill">
+                    <i class="fas fa-search me-2"></i>Apply
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Enhanced Ledger Table -->
+<div class="data-table-container">
+  <div class="data-table-header">
+    <div class="table-title-section">
+      <h2 class="table-title" id="ledger-table-title">
+        <i class="fas fa-table me-2" aria-hidden="true"></i>
+        Stock Movement History
+      </h2>
+      <p class="table-description text-muted">Detailed log of all inventory movements and changes</p>
+    </div>
+    
+    <div class="table-actions">
+      <div class="table-search">
+        <label for="ledger-table-search" class="visually-hidden">Search Ledger</label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="fas fa-search" aria-hidden="true"></i>
+          </span>
+          <input type="text" 
+                 class="form-control" 
+                 id="ledger-table-search"
+                 placeholder="Search movements..."
+                 aria-describedby="ledger-table-search-help">
+        </div>
+        <div id="ledger-table-search-help" class="visually-hidden">
+          Search across products, locations, types, and notes. Results update as you type.
+        </div>
+      </div>
+      
+      <button type="button" 
+              class="btn btn-outline-secondary"
+              id="ledger-table-export"
+              aria-label="Export table data">
+        <i class="fas fa-download me-2" aria-hidden="true"></i>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table grocify-table" 
+           id="ledger-table"
+           role="table"
+           aria-labelledby="ledger-table-title"
+           aria-describedby="ledger-table-info">
+      
+      <caption class="visually-hidden">
+        Stock Movement Ledger: Track all inventory movements and stock changes
+      </caption>
+      
+      <thead>
+        <tr role="row">
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="timestamp" aria-label="Sort by Timestamp">
+            <div class="header-content">
+              <span class="header-text">Date & Time</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="product" aria-label="Sort by Product">
+            <div class="header-content">
+              <span class="header-text">Product</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="location" aria-label="Sort by Location">
+            <div class="header-content">
+              <span class="header-text">Location</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="before" aria-label="Sort by Before Quantity">
+            <div class="header-content">
+              <span class="header-text">Before</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="change" aria-label="Sort by Change">
+            <div class="header-content">
+              <span class="header-text">Change</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="after" aria-label="Sort by After Quantity">
+            <div class="header-content">
+              <span class="header-text">After</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="type" aria-label="Sort by Type">
+            <div class="header-content">
+              <span class="header-text">Type</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell">Note</th>
+        </tr>
+      </thead>
+      
+      <tbody>
+        {% for entry in ledger_entries %}
+          <tr role="row" class="data-row" data-row-id="{{ entry.id }}">
+            <td class="date-cell">
+              <div>
+                <time datetime="{{ entry.timestamp|date:'Y-m-d\TH:i:s' }}" aria-label="{{ entry.timestamp|date:'F j, Y \a\t g:i A' }}">
+                  {{ entry.timestamp|date:'M j, Y' }}
+                </time>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">
+                  {{ entry.timestamp|date:'g:i A' }}
+                </div>
+              </div>
+            </td>
+            <td class="text-cell">
+              <div class="d-flex align-items-center">
+                <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; margin-right: 0.75rem; font-size: 0.875rem; color: var(--text-muted);">
+                  <i class="fas fa-box"></i>
+                </div>
+                <div>
+                  <div class="fw-medium">{{ entry.product.name }}</div>
+                  <small class="text-muted">{{ entry.product.category.name|default:"Uncategorized" }}</small>
+                </div>
+              </div>
+            </td>
+            <td class="text-cell">
+              <span class="badge bg-primary">{{ entry.location.name }}</span>
+            </td>
+            <td class="number-cell">
+              <span class="fw-bold">{{ entry.quantity_before }}</span>
+            </td>
+            <td class="number-cell">
+              {% if entry.quantity_changed > 0 %}
+                <div class="quantity-change positive">
+                  <i class="fas fa-arrow-up"></i>
+                  <span>+{{ entry.quantity_changed }}</span>
+                </div>
+              {% elif entry.quantity_changed < 0 %}
+                <div class="quantity-change negative">
+                  <i class="fas fa-arrow-down"></i>
+                  <span>{{ entry.quantity_changed }}</span>
+                </div>
+              {% else %}
+                <div class="quantity-change neutral">
+                  <i class="fas fa-minus"></i>
+                  <span>0</span>
+                </div>
+              {% endif %}
+            </td>
+            <td class="number-cell">
+              <span class="fw-bold">{{ entry.quantity_after }}</span>
+            </td>
+            <td class="status-cell">
+              {% if entry.related_entry.entry_type == 'SALE' %}
+                <span class="entry-type-badge entry-type-sale">Sale</span>
+              {% elif entry.related_entry.entry_type == 'PURCHASE' %}
+                <span class="entry-type-badge entry-type-purchase">Purchase</span>
+              {% elif entry.related_entry.entry_type == 'ADJUSTMENT' %}
+                <span class="entry-type-badge entry-type-adjustment">Adjustment</span>
+              {% elif entry.related_entry.entry_type == 'RETURN' %}
+                <span class="entry-type-badge entry-type-return">Return</span>
+              {% else %}
+                <span class="entry-type-badge" style="background: var(--bg-secondary); color: var(--text-secondary);">{{ entry.related_entry.get_entry_type_display|default:"Unknown" }}</span>
+              {% endif %}
+            </td>
+            <td class="text-cell">
+              <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ entry.related_entry.note }}">
+                {{ entry.related_entry.note|default:"—" }}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr class="empty-row">
+            <td colspan="8" class="text-center empty-state">
+              <div class="empty-state-content">
+                <i class="fas fa-history fa-3x text-muted mb-3" aria-hidden="true"></i>
+                <p class="empty-message">
+                  No ledger entries found. Stock movements will appear here as transactions occur.
+                </p>
+                <a href="{% url 'inventory:stock_dashboard' %}" 
+                   class="btn btn-primary"
+                   aria-label="Go to inventory">
+                  <i class="fas fa-boxes me-2" aria-hidden="true"></i>
+                  View Inventory
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="table-footer">
+    <div class="table-info" id="ledger-table-info" aria-live="polite">
+      {% if ledger_entries %}
+        Showing {{ ledger_entries|length }} 
+        {% if ledger_entries|length == 1 %}entry{% else %}entries{% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupLedgerSearch();
+    setupLedgerSort();
+    setupLedgerExport();
+});
+
+function setupLedgerSearch() {
+    const searchInput = document.getElementById('ledger-table-search');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            performLedgerSearch(e.target.value);
+        }, 300);
+    });
+}
+
+function performLedgerSearch(query) {
+    const rows = document.querySelectorAll('#ledger-table .data-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const matches = text.includes(query.toLowerCase());
+        
+        row.style.display = matches || !query ? '' : 'none';
+        if (matches || !query) visibleCount++;
+    });
+    
+    updateTableInfo(visibleCount, rows.length);
+}
+
+function setupLedgerSort() {
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const sortKey = header.dataset.sortKey;
+            const currentSort = header.getAttribute('aria-sort');
+            const newSort = currentSort === 'ascending' ? 'descending' : 'ascending';
+            
+            // Reset all other headers
+            sortableHeaders.forEach(h => {
+                h.setAttribute('aria-sort', 'none');
+                h.querySelector('.sort-icon').className = 'fas fa-sort sort-icon';
+            });
+            
+            // Set new sort
+            header.setAttribute('aria-sort', newSort);
+            const icon = header.querySelector('.sort-icon');
+            icon.className = `fas fa-sort-${newSort === 'ascending' ? 'up' : 'down'} sort-icon`;
+            
+            // Perform sort
+            sortLedgerTable(sortKey, newSort);
+        });
+    });
+}
+
+function sortLedgerTable(key, direction) {
+    const tbody = document.querySelector('#ledger-table tbody');
+    const rows = Array.from(tbody.querySelectorAll('.data-row'));
+    
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch(key) {
+            case 'timestamp':
+                aValue = new Date(a.querySelector('time').getAttribute('datetime'));
+                bValue = new Date(b.querySelector('time').getAttribute('datetime'));
+                break;
+            case 'before':
+            case 'after':
+            case 'change':
+                aValue = parseInt(a.querySelector('.number-cell .fw-bold').textContent) || 0;
+                bValue = parseInt(b.querySelector('.number-cell .fw-bold').textContent) || 0;
+                break;
+            default:
+                aValue = a.textContent.toLowerCase();
+                bValue = b.textContent.toLowerCase();
+        }
+        
+        if (direction === 'ascending') {
+            return aValue > bValue ? 1 : -1;
+        } else {
+            return aValue < bValue ? 1 : -1;
+        }
+    });
+    
+    // Reorder DOM elements
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function setupLedgerExport() {
+    const exportButton = document.getElementById('ledger-table-export');
+    
+    exportButton.addEventListener('click', function() {
+        exportLedger();
+    });
+}
+
+function exportLedger() {
+    console.log('Exporting ledger...');
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Export Started', 'Ledger report is being generated for download.');
+    }
+    
+    // Simulate export delay
+    setTimeout(() => {
+        // Create CSV content
+        const table = document.getElementById('ledger-table');
+        const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
+        const rows = Array.from(table.querySelectorAll('.data-row')).map(row => 
+            Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim())
+        );
+        
+        const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'stock-ledger-export.csv';
+        a.click();
+        
+        window.URL.revokeObjectURL(url);
+        
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Export Complete', 'Ledger report has been downloaded.');
+        }
+    }, 2000);
+}
+
+function refreshLedger() {
+    console.log('Refreshing ledger data...');
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Refreshing', 'Updating ledger data...');
+    }
+    
+    // Simulate refresh
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
+function resetFilters() {
+    window.location.href = window.location.pathname;
+}
+
+function updateTableInfo(visible, total) {
+    const tableInfo = document.getElementById('ledger-table-info');
+    if (tableInfo) {
+        if (visible === total) {
+            tableInfo.textContent = `Showing ${total} ${total === 1 ? 'entry' : 'entries'}`;
+        } else {
+            tableInfo.textContent = `Showing ${visible} of ${total} entries (filtered)`;
+        }
+    }
+}
+</script>
 {% endblock %}

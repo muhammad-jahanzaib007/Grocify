@@ -1,10 +1,359 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}POS Checkout{% endblock %}
-{% block header %}Point of Sale{% endblock %}
+{% block title %}Point of Sale{% endblock %}
+{% block header %}
+  <i class="fas fa-cash-register me-2"></i>Point of Sale System
+{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pos.css' %}">
+<style>
+  .pos-container {
+    background: var(--bg-secondary);
+    min-height: calc(100vh - 140px);
+  }
+  
+  .pos-search-panel {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    height: fit-content;
+    position: sticky;
+    top: 1rem;
+  }
+  
+  .pos-main-panel {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .search-input {
+    border: 2px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .search-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+  
+  .search-results {
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .product-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .product-item:hover {
+    background: #f8fafc;
+  }
+  
+  .product-item:last-child {
+    border-bottom: none;
+  }
+  
+  .cart-panel {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .cart-table-wrapper {
+    background: #f8fafc;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .cart-table {
+    margin: 0;
+  }
+  
+  .cart-table th {
+    background: transparent;
+    border: none;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .cart-table td {
+    padding: 0.875rem 0.5rem;
+    border: none;
+    vertical-align: middle;
+  }
+  
+  #cart-count {
+    font-size: 0.875rem;
+    border-radius: 1rem;
+  }
+  
+  .payment-section {
+    background: #f8fafc;
+    border-radius: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .form-floating {
+    margin-bottom: 1rem;
+  }
+  
+  .form-floating > .form-control {
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f9;
+  }
+  
+  .form-floating > .form-control:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  
+  .btn-pos {
+    border-radius: 0.75rem;
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-pos:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  .store-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .total-display {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .total-amount {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  
+  /* Enhanced Mobile Responsiveness */
+  @media (max-width: 992px) {
+    .pos-container {
+      padding: 1rem;
+    }
+    
+    .pos-search-panel {
+      margin-bottom: 1.5rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .pos-container {
+      padding: 0.75rem;
+    }
+    
+    .store-info {
+      padding: 1rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    
+    .pos-search-panel {
+      position: static;
+      margin-bottom: 1.5rem;
+      padding: 1.5rem;
+    }
+    
+    .search-input {
+      font-size: 1.1rem;
+      padding: 1rem;
+    }
+    
+    .cart-panel {
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .cart-table th,
+    .cart-table td {
+      padding: 0.75rem 0.25rem;
+      font-size: 0.875rem;
+    }
+    
+    .cart-table th:nth-child(3),
+    .cart-table td:nth-child(3),
+    .cart-table th:nth-child(4),
+    .cart-table td:nth-child(4) {
+      display: none; /* Hide price and discount columns on mobile */
+    }
+    
+    .payment-section {
+      padding: 1.5rem;
+    }
+    
+    .form-floating {
+      margin-bottom: 1rem;
+    }
+    
+    .action-buttons {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .btn-pos {
+      padding: 1rem;
+      font-size: 1rem;
+    }
+    
+    .total-display {
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    
+    .total-amount {
+      font-size: 2rem;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .pos-container {
+      padding: 0.5rem;
+    }
+    
+    .store-info {
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .store-info h4 {
+      font-size: 1.125rem;
+    }
+    
+    .pos-search-panel {
+      padding: 1rem;
+    }
+    
+    .search-input {
+      padding: 0.875rem;
+      font-size: 1rem;
+    }
+    
+    .cart-panel {
+      padding: 1rem;
+    }
+    
+    .cart-table {
+      font-size: 0.8rem;
+    }
+    
+    .cart-table th,
+    .cart-table td {
+      padding: 0.5rem 0.125rem;
+    }
+    
+    .cart-table th:first-child,
+    .cart-table td:first-child {
+      width: 40%;
+    }
+    
+    .cart-table th:nth-child(2),
+    .cart-table td:nth-child(2) {
+      width: 20%;
+      text-align: center;
+    }
+    
+    .cart-table th:last-child,
+    .cart-table td:last-child {
+      width: 25%;
+      text-align: center;
+    }
+    
+    .payment-section {
+      padding: 1rem;
+    }
+    
+    .form-floating > .form-control,
+    .form-floating > .form-select {
+      font-size: 0.9rem;
+      min-height: 48px;
+    }
+    
+    .btn-pos {
+      padding: 0.875rem;
+      font-size: 0.9rem;
+      min-height: 48px;
+    }
+    
+    .total-display {
+      padding: 1rem;
+    }
+    
+    .total-amount {
+      font-size: 1.75rem;
+    }
+    
+    /* Stack payment form fields vertically */
+    .row.g-4 {
+      row-gap: 1rem;
+    }
+    
+    .col-md-6,
+    .col-md-4 {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  }
+  
+  /* Touch-friendly adjustments */
+  @media (max-width: 480px) {
+    .search-input,
+    .form-control,
+    .form-select,
+    .btn {
+      min-height: 48px; /* iOS recommended touch target size */
+    }
+    
+    .product-item {
+      padding: 1rem 0.75rem;
+      touch-action: manipulation;
+    }
+    
+    .btn-pos {
+      padding: 1rem;
+      min-height: 52px;
+      touch-action: manipulation;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -15,105 +364,200 @@
 {% endblock %}
 
 {% block content %}
-<div class="mb-2">
-          Viewing store: <strong>{{ current_location.name|default:"All Stores" }}</strong>
-    </div>
-<div class="pos-wrapper d-flex flex-wrap gap-4">
-  <!-- Sidebar Product Search -->
-  <div class="pos-left col-12 col-lg-4">
-    <div class="product-search-panel">
-      <h5>🔍 Search Products</h5>
-      <input type="text" id="product-search" class="form-control mb-3" placeholder="Type name or scan barcode..." />
-      <div id="search-results" class="border rounded" style="max-height: 300px; overflow-y: auto;"></div>
+<div class="pos-container">
+  <!-- Store Information -->
+  <div class="store-info">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-store me-3" style="font-size: 1.5rem;"></i>
+      <div>
+        <h6 class="mb-0">Active Store</h6>
+        <h4 class="mb-0 fw-bold">{{ current_location.name|default:"All Stores" }}</h4>
+      </div>
     </div>
   </div>
+
+  <div class="row g-4">
+    <!-- Product Search Panel -->
+    <div class="col-lg-4">
+      <div class="pos-search-panel p-4">
+        <div class="d-flex align-items-center mb-4">
+          <i class="fas fa-search text-primary me-3" style="font-size: 1.5rem;"></i>
+          <div>
+            <h5 class="mb-0 fw-bold">Product Search</h5>
+            <small class="text-muted">Scan barcode or type product name</small>
+          </div>
+        </div>
+        
+        <input type="text" 
+               id="product-search" 
+               class="form-control search-input mb-3" 
+               placeholder="🔍 Search products or scan barcode..." 
+               autocomplete="off" />
+        
+        <div id="search-results" class="search-results"></div>
+      </div>
+    </div>
 
   <!-- Cart & Checkout -->
   <div class="pos-right col-12 col-lg-8">
     <form method="post" action="{% url 'sales:process_sale' %}" id="pos-form">
       {% csrf_token %}
 
-      <!-- Cart Table -->
+      <!-- Cart Panel -->
       <div class="cart-panel mb-4">
-        <h5 class="mb-3">🛒 Cart</h5>
-        <table class="table table-sm table-bordered cart-table">
-          <thead class="table-light">
-            <tr>
-              <th>Product</th>
-              <th style="width: 80px;">Qty</th>
-              <th>Price</th>
-              <th style="width: 80px;">Disc</th>
-              <th>Total</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="cart-body"></tbody>
-          <tfoot>
-            <tr>
-              <th colspan="4" class="text-end">Grand Total:</th>
-              <th id="cart-total">0.00</th>
-              <th></th>
-            </tr>
-          </tfoot>
-        </table>
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <h5 class="mb-0 fw-bold d-flex align-items-center">
+            <i class="fas fa-shopping-cart text-primary me-2"></i>
+            Shopping Cart
+          </h5>
+          <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2" id="cart-count">0 items</span>
+        </div>
+        
+        <div class="cart-table-wrapper">
+          <table class="table table-borderless cart-table mb-0">
+            <thead>
+              <tr class="border-bottom">
+                <th class="fw-semibold text-secondary">Product</th>
+                <th class="fw-semibold text-secondary text-center" style="width: 80px;">Qty</th>
+                <th class="fw-semibold text-secondary text-center">Price</th>
+                <th class="fw-semibold text-secondary text-center" style="width: 80px;">Disc%</th>
+                <th class="fw-semibold text-secondary text-center">Total</th>
+                <th class="fw-semibold text-secondary text-center" style="width: 50px;"></th>
+              </tr>
+            </thead>
+            <tbody id="cart-body">
+              <tr id="empty-cart-message">
+                <td colspan="6" class="text-center py-5 text-muted">
+                  <div class="mb-3">
+                    <i class="fas fa-shopping-cart fa-3x text-muted opacity-50"></i>
+                  </div>
+                  <h6 class="text-muted">Your cart is empty</h6>
+                  <small>Start by searching and adding products above</small>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Cart Total Display -->
+        <div class="total-display mt-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">Grand Total</h5>
+            <h3 class="mb-0 fw-bold" id="cart-total">$0.00</h3>
+          </div>
+        </div>
       </div>
 
-      <!-- Sale Summary -->
-      <div class="row g-3 align-items-end">
-        <div class="col-md-4">
-          <label>Customer</label>
-          <select name="customer_id" class="form-select" id="customer-select">
-            <option value="">Walk-In Customer</option>
-            {% for customer in customers %}
-              <option value="{{ customer.id }}">{{ customer.name }} ({{ customer.phone }})</option>
-            {% endfor %}
-          </select>
-          <small id="customer-points-preview" class="text-muted">Points Available: —</small>
-        </div>
+      <!-- Customer & Payment Section -->
+      <div class="payment-section">
+        <h5 class="mb-4 fw-bold d-flex align-items-center">
+          <i class="fas fa-credit-card text-primary me-2"></i>
+          Payment Details
+        </h5>
+        
+        <div class="row g-4">
+          <!-- Customer Selection -->
+          <div class="col-md-6">
+            <div class="form-floating">
+              <select name="customer_id" class="form-select" id="customer-select">
+                <option value="">Walk-In Customer</option>
+                {% for customer in customers %}
+                  <option value="{{ customer.id }}">{{ customer.name }} ({{ customer.phone }})</option>
+                {% endfor %}
+              </select>
+              <label for="customer-select">
+                <i class="fas fa-user me-2"></i>Customer
+              </label>
+            </div>
+            <div class="mt-2">
+              <small id="customer-points-preview" class="text-primary fw-medium">
+                <i class="fas fa-star me-1"></i>Points Available: —
+              </small>
+            </div>
+          </div>
 
-        <div class="col-md-4">
-          <label>Coupon Code</label>
-          <input type="text" name="coupon_code" class="form-control" />
-        </div>
+          <!-- Coupon Code -->
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="text" name="coupon_code" class="form-control" id="coupon-input" placeholder="Enter coupon code" />
+              <label for="coupon-input">
+                <i class="fas fa-tag me-2"></i>Coupon Code
+              </label>
+            </div>
+          </div>
 
-        <div class="col-md-4">
-          <label>Discount Amount</label>
-          <input type="number" name="discount_amount" class="form-control" step="0.01" min="0" />
-        </div>
+          <!-- Discount Amount -->
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="number" name="discount_amount" class="form-control" id="discount-input" step="0.01" min="0" placeholder="0.00" />
+              <label for="discount-input">
+                <i class="fas fa-percentage me-2"></i>Discount Amount
+              </label>
+            </div>
+          </div>
 
-        <div class="col-md-4">
-          <label>Payment Method</label>
-          <select name="payment_method" class="form-select">
-            <option value="Cash" selected>Cash</option>
-            <option value="Card">Card</option>
-            <option value="Credit">Credit</option>
-            <option value="Online">Online Payment</option>
-            <option value="Store Points">Store Points</option>
-          </select>
-        </div>
+          <!-- Loyalty Points -->
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="number" name="points_used" class="form-control" id="points-input" step="1" min="0" placeholder="0" />
+              <label for="points-input">
+                <i class="fas fa-star me-2"></i>Use Loyalty Points
+              </label>
+            </div>
+          </div>
 
-        <div class="col-md-4">
-          <label>Amount Paid</label>
-          <input type="number" name="amount_paid" class="form-control" step="0.01" required />
-        </div>
+          <!-- Payment Method -->
+          <div class="col-md-4">
+            <div class="form-floating">
+              <select name="payment_method" class="form-select" id="payment-method">
+                <option value="Cash" selected>💵 Cash</option>
+                <option value="Card">💳 Credit/Debit Card</option>
+                <option value="Credit">📋 Store Credit</option>
+                <option value="Online">🌐 Online Payment</option>
+                <option value="Store Points">⭐ Store Points</option>
+              </select>
+              <label for="payment-method">
+                <i class="fas fa-wallet me-2"></i>Payment Method
+              </label>
+            </div>
+          </div>
 
-        <div class="col-md-4">
-          <label>Change Due</label>
-          <input type="text" id="change-due" class="form-control" readonly />
-        </div>
+          <!-- Amount Paid -->
+          <div class="col-md-4">
+            <div class="form-floating">
+              <input type="number" name="amount_paid" class="form-control" id="amount-paid" step="0.01" required placeholder="0.00" />
+              <label for="amount-paid">
+                <i class="fas fa-dollar-sign me-2"></i>Amount Paid
+              </label>
+            </div>
+          </div>
 
-        <div class="col-md-4">
-          <label>Use Loyalty Points</label>
-          <input type="number" name="points_used" class="form-control" step="1" min="0" />
+          <!-- Change Due -->
+          <div class="col-md-4">
+            <div class="form-floating">
+              <input type="text" id="change-due" class="form-control" readonly placeholder="0.00" />
+              <label for="change-due">
+                <i class="fas fa-coins me-2"></i>Change Due
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Hidden Cart JSON -->
       <input type="hidden" name="cart" id="cart-input" />
 
-      <div class="mt-4 d-flex justify-content-between">
-        <a href="{% url 'dashboard:admin_dashboard' %}" class="btn btn-outline-secondary">← Cancel</a>
-        <button type="submit" class="btn btn-success">✅ Complete Sale</button>
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <a href="{% url 'dashboard:admin_dashboard' %}" class="btn btn-outline-secondary btn-pos flex-fill">
+          <i class="fas fa-times me-2"></i>Cancel Transaction
+        </a>
+        <button type="button" class="btn btn-warning btn-pos flex-fill" id="clear-cart">
+          <i class="fas fa-trash me-2"></i>Clear Cart
+        </button>
+        <button type="submit" class="btn btn-success btn-pos flex-fill" id="complete-sale">
+          <i class="fas fa-check-circle me-2"></i>Complete Sale
+        </button>
       </div>
     </form>
   </div>

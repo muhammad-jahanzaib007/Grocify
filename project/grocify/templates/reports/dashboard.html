@@ -1,25 +1,881 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Reports Dashboard{% endblock %}
-{% block page_title %}Reports Dashboard{% endblock %}
+{% block title %}Reports & Analytics{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:admin_dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Reports</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grocify-design-system.css' %}">
+<style>
+.reports-header {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.report-category {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.report-category::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.report-category.sales::before {
+    background: var(--success);
+}
+
+.report-category.inventory::before {
+    background: var(--warning);
+}
+
+.report-category.financial::before {
+    background: var(--primary);
+}
+
+.report-category.operational::before {
+    background: var(--info);
+}
+
+.report-category.analytics::before {
+    background: var(--secondary);
+}
+
+.report-category.damage::before {
+    background: var(--danger);
+}
+
+.report-category:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    border-color: var(--primary);
+}
+
+.report-category:hover::before {
+    opacity: 1;
+}
+
+.report-category-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.report-category-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--text-inverse);
+    margin-right: 1rem;
+}
+
+.report-category-icon.sales {
+    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+}
+
+.report-category-icon.inventory {
+    background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+}
+
+.report-category-icon.financial {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.report-category-icon.operational {
+    background: linear-gradient(135deg, var(--info) 0%, #0284c7 100%);
+}
+
+.report-category-icon.analytics {
+    background: linear-gradient(135deg, var(--secondary) 0%, #7c3aed 100%);
+}
+
+.report-category-icon.damage {
+    background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+}
+
+.report-category-title {
+    font-size: 1.25rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.report-category-description {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.report-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.report-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.report-item:last-child {
+    border-bottom: none;
+}
+
+.report-item:hover {
+    background: var(--bg-secondary);
+    margin: 0 -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    border-radius: var(--border-radius-sm);
+}
+
+.report-item-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.report-item-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.report-item-details {
+    flex: 1;
+}
+
+.report-item-name {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.report-item-description {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.report-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.report-item-btn {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.75rem;
+    transition: var(--transition);
+}
+
+.report-item-btn:hover {
+    background: var(--primary);
+    color: var(--text-inverse);
+    border-color: var(--primary);
+    text-decoration: none;
+}
+
+.quick-reports {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.quick-reports-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.quick-reports-title {
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.quick-report-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.quick-report-btn {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.quick-report-btn:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.quick-report-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    color: var(--primary);
+    margin-right: 1rem;
+    font-size: 0.875rem;
+}
+
+.quick-report-content h6 {
+    margin: 0 0 0.25rem 0;
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.9rem;
+}
+
+.quick-report-content p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    .reports-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .quick-report-buttons {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .reports-header {
+        padding: 1.5rem;
+    }
+    
+    .report-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .report-item-actions {
+        justify-content: flex-start;
+    }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4">📊 Reports Dashboard</h2>
-  <div class="row g-3">
-    {% for summary in damage_summary %}
-    <div class="col-md-4">
-      <div class="card text-bg-info">
-        <div class="card-body">
-          <h5>{{ summary.damage_type|title }}</h5>
-          <h6 class="card-subtitle mb-2">Incidents: {{ summary.incidents }}</h6>
-          <p>Total Lost: {{ summary.total_lost }}</p>
+<!-- Reports Header -->
+<div class="reports-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-2" style="color: inherit;">
+                <i class="fas fa-chart-bar me-3"></i>Reports & Analytics
+            </h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+                Comprehensive business intelligence and reporting dashboard
+            </p>
         </div>
-      </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light" onclick="scheduleReport()">
+                <i class="fas fa-clock me-2"></i>Schedule
+            </button>
+            <a href="{% url 'reports:analytics_dashboard' %}" class="btn btn-light">
+                <i class="fas fa-analytics me-2"></i>Analytics
+            </a>
+        </div>
     </div>
-    {% empty %}
-    <p>No damage reports available.</p>
-    {% endfor %}
-  </div>
 </div>
+
+<!-- Quick Reports Section -->
+<div class="quick-reports">
+    <div class="quick-reports-header">
+        <h3 class="quick-reports-title">
+            <i class="fas fa-bolt me-2"></i>Quick Reports
+        </h3>
+        <small class="text-muted">Generate instant reports</small>
+    </div>
+    
+    <div class="quick-report-buttons">
+        <a href="#" class="quick-report-btn" onclick="generateQuickReport('daily-sales')">
+            <div class="quick-report-icon">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="quick-report-content">
+                <h6>Daily Sales</h6>
+                <p>Today's sales summary</p>
+            </div>
+        </a>
+        
+        <a href="#" class="quick-report-btn" onclick="generateQuickReport('low-stock')">
+            <div class="quick-report-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="quick-report-content">
+                <h6>Low Stock Alert</h6>
+                <p>Products needing reorder</p>
+            </div>
+        </a>
+        
+        <a href="#" class="quick-report-btn" onclick="generateQuickReport('top-products')">
+            <div class="quick-report-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="quick-report-content">
+                <h6>Top Products</h6>
+                <p>Best selling items this month</p>
+            </div>
+        </a>
+        
+        <a href="#" class="quick-report-btn" onclick="generateQuickReport('financial-summary')">
+            <div class="quick-report-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="quick-report-content">
+                <h6>Financial Summary</h6>
+                <p>Revenue and profit overview</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Report Categories Grid -->
+<div class="reports-grid">
+    <!-- Sales Reports -->
+    <div class="report-category sales">
+        <div class="report-category-header">
+            <div class="report-category-icon sales">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div>
+                <h3 class="report-category-title">Sales Reports</h3>
+            </div>
+        </div>
+        <p class="report-category-description">
+            Analyze sales performance, customer behavior, and revenue trends across different time periods and locations.
+        </p>
+        
+        <ul class="report-list">
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-chart-area"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Sales Performance</h6>
+                        <p class="report-item-description">Daily, weekly, monthly sales analysis</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('sales-performance')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('sales-performance')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Customer Analysis</h6>
+                        <p class="report-item-description">Customer demographics and buying patterns</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('customer-analysis')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('customer-analysis')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Product Performance</h6>
+                        <p class="report-item-description">Best and worst performing products</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('product-performance')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('product-performance')">Export</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Inventory Reports -->
+    <div class="report-category inventory">
+        <div class="report-category-header">
+            <div class="report-category-icon inventory">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <div>
+                <h3 class="report-category-title">Inventory Reports</h3>
+            </div>
+        </div>
+        <p class="report-category-description">
+            Monitor stock levels, track inventory movements, and optimize purchasing decisions across all locations.
+        </p>
+        
+        <ul class="report-list">
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-warehouse"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Stock Levels</h6>
+                        <p class="report-item-description">Current inventory across all locations</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('stock-levels')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('stock-levels')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Movement History</h6>
+                        <p class="report-item-description">Detailed stock movement tracking</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="{% url 'inventory:stock_ledger' %}" class="report-item-btn">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('movement-history')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Reorder Alerts</h6>
+                        <p class="report-item-description">Products requiring immediate attention</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('reorder-alerts')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('reorder-alerts')">Export</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Financial Reports -->
+    <div class="report-category financial">
+        <div class="report-category-header">
+            <div class="report-category-icon financial">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div>
+                <h3 class="report-category-title">Financial Reports</h3>
+            </div>
+        </div>
+        <p class="report-category-description">
+            Track revenue, expenses, profitability, and financial performance with detailed accounting reports.
+        </p>
+        
+        <ul class="report-list">
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Profit & Loss</h6>
+                        <p class="report-item-description">Revenue vs expenses analysis</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('profit-loss')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('profit-loss')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Expense Tracking</h6>
+                        <p class="report-item-description">Detailed expense categorization</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="{% url 'expenses:expense_list' %}" class="report-item-btn">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('expense-tracking')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Cash Flow</h6>
+                        <p class="report-item-description">Money in vs money out analysis</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('cash-flow')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('cash-flow')">Export</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Operational Reports -->
+    <div class="report-category operational">
+        <div class="report-category-header">
+            <div class="report-category-icon operational">
+                <i class="fas fa-cogs"></i>
+            </div>
+            <div>
+                <h3 class="report-category-title">Operational Reports</h3>
+            </div>
+        </div>
+        <p class="report-category-description">
+            Monitor daily operations, staff performance, and operational efficiency across all business areas.
+        </p>
+        
+        <ul class="report-list">
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Staff Performance</h6>
+                        <p class="report-item-description">Employee productivity and sales metrics</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('staff-performance')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('staff-performance')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Purchase Orders</h6>
+                        <p class="report-item-description">Supplier and purchasing analysis</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="{% url 'purchases:order_list' %}" class="report-item-btn">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('purchase-orders')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Location Performance</h6>
+                        <p class="report-item-description">Compare performance across locations</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('location-performance')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('location-performance')">Export</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Advanced Analytics -->
+    <div class="report-category analytics">
+        <div class="report-category-header">
+            <div class="report-category-icon analytics">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div>
+                <h3 class="report-category-title">Advanced Analytics</h3>
+            </div>
+        </div>
+        <p class="report-category-description">
+            Leverage advanced analytics, predictive insights, and business intelligence for strategic decision making.
+        </p>
+        
+        <ul class="report-list">
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-crystal-ball"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Demand Forecasting</h6>
+                        <p class="report-item-description">Predict future demand patterns</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('demand-forecasting')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('demand-forecasting')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-chart-network"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Trend Analysis</h6>
+                        <p class="report-item-description">Identify business trends and patterns</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="{% url 'reports:analytics_dashboard' %}" class="report-item-btn">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('trend-analysis')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">KPI Dashboard</h6>
+                        <p class="report-item-description">Key performance indicators overview</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="{% url 'reports:analytics_dashboard' %}" class="report-item-btn">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('kpi-dashboard')">Export</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Damage Reports -->
+    <div class="report-category damage">
+        <div class="report-category-header">
+            <div class="report-category-icon damage">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div>
+                <h3 class="report-category-title">Damage Reports</h3>
+            </div>
+        </div>
+        <p class="report-category-description">
+            Track product damage, loss incidents, and maintain detailed damage reporting for insurance and analysis.
+        </p>
+        
+        <ul class="report-list">
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-broken-heart"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Damage Summary</h6>
+                        <p class="report-item-description">Overview of all damage incidents</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="viewDamageSummary()">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('damage-summary')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Damage Snapshots</h6>
+                        <p class="report-item-description">Detailed damage documentation</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="{% url 'reports:snapshot_list' %}" class="report-item-btn">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('damage-snapshots')">Export</a>
+                </div>
+            </li>
+            <li class="report-item">
+                <div class="report-item-info">
+                    <div class="report-item-icon">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <div class="report-item-details">
+                        <h6 class="report-item-name">Loss Analysis</h6>
+                        <p class="report-item-description">Financial impact of damages</p>
+                    </div>
+                </div>
+                <div class="report-item-actions">
+                    <a href="#" class="report-item-btn" onclick="openReport('loss-analysis')">View</a>
+                    <a href="#" class="report-item-btn" onclick="exportReport('loss-analysis')">Export</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Reports dashboard initialized');
+});
+
+function openReport(reportType) {
+    console.log('Opening report:', reportType);
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Loading Report', `Opening ${reportType.replace('-', ' ')} report...`);
+    }
+    
+    // Simulate report loading
+    setTimeout(() => {
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Report Ready', 'Report has been generated successfully.');
+        }
+    }, 2000);
+}
+
+function exportReport(reportType) {
+    console.log('Exporting report:', reportType);
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Export Started', `Exporting ${reportType.replace('-', ' ')} report...`);
+    }
+    
+    // Simulate export
+    setTimeout(() => {
+        // Create sample CSV
+        const csvContent = `Report Type,${reportType}\nGenerated On,${new Date().toLocaleDateString()}\nStatus,Complete`;
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${reportType}-report.csv`;
+        a.click();
+        
+        window.URL.revokeObjectURL(url);
+        
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Export Complete', 'Report has been downloaded.');
+        }
+    }, 2000);
+}
+
+function generateQuickReport(reportType) {
+    console.log('Generating quick report:', reportType);
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Generating Report', `Creating ${reportType.replace('-', ' ')} quick report...`);
+    }
+    
+    // Simulate quick report generation
+    setTimeout(() => {
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Quick Report Ready', 'Your quick report is ready for download.');
+        }
+    }, 1500);
+}
+
+function scheduleReport() {
+    console.log('Opening report scheduler...');
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Schedule Reports', 'Report scheduling feature coming soon!');
+    }
+}
+
+function viewDamageSummary() {
+    // Show damage summary data
+    const summaryData = [
+        {% for summary in damage_summary %}
+        {
+            type: '{{ summary.damage_type|title }}',
+            incidents: {{ summary.incidents }},
+            totalLost: {{ summary.total_lost }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    if (summaryData.length > 0) {
+        console.log('Damage summary:', summaryData);
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('info', 'Damage Summary', `Found ${summaryData.length} damage type(s) with incidents.`);
+        }
+    } else {
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('info', 'No Damage Reports', 'No damage incidents to display.');
+        }
+    }
+}
+</script>
 {% endblock %}

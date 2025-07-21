@@ -1,0 +1,123 @@
+{% comment %}
+Reusable form wrapper component for consistent form styling across the application
+
+Usage:
+{% include 'components/form_wrapper.html' with form=form title="Form Title" description="Form description" icon="plus" submit_text="Save" %}
+
+Parameters:
+- form (required): Django form instance
+- title (required): Form header title
+- description (optional): Subtitle description
+- icon (optional): FontAwesome icon name (without 'fa-' prefix), defaults to 'edit'
+- submit_text (optional): Submit button text, defaults to 'Save'
+- cancel_url (optional): Cancel button URL
+- cancel_text (optional): Cancel button text, defaults to 'Cancel'
+- container_class (optional): Additional CSS classes for container
+- form_class (optional): Additional CSS classes for form
+- show_required_note (optional): Show required fields note, defaults to True
+{% endcomment %}
+
+{% load static %}
+
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 {{ container_class|default:'col-xl-8' }}">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="mb-0" id="form-title">
+            <i class="fas fa-{{ icon|default:'edit' }} me-3" aria-hidden="true"></i>
+            {{ title }}
+          </h3>
+          {% if description %}
+            <p class="mb-0 mt-2 text-muted" id="form-description">
+              {{ description }}
+            </p>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <form method="post" novalidate class="grocify-form {{ form_class }}" role="form" aria-labelledby="form-title" aria-describedby="form-description">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger" role="alert" aria-live="polite">
+                <strong>Form Errors:</strong>
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            {% for field in form %}
+              {% if field.field.widget.input_type == 'hidden' %}
+                {{ field }}
+              {% else %}
+                <div class="form-floating mb-3" {% if field.errors %}aria-describedby="{{ field.id_for_label }}-error"{% endif %}>
+                  {{ field }}
+                  <label for="{{ field.id_for_label }}" {% if field.field.required %}aria-required="true"{% endif %}>
+                    {% if field.name == 'amount' or field.name == 'price' or field.name == 'cost_price' or field.name == 'selling_price' %}
+                      <i class="fas fa-dollar-sign me-2"></i>
+                    {% elif field.name == 'date' or field.name == 'date_ordered' or field.name == 'date_received' %}
+                      <i class="fas fa-calendar me-2"></i>
+                    {% elif field.name == 'quantity' or field.name == 'qty' %}
+                      <i class="fas fa-sort-numeric-up me-2"></i>
+                    {% elif field.name == 'product' %}
+                      <i class="fas fa-box me-2"></i>
+                    {% elif field.name == 'customer' %}
+                      <i class="fas fa-user me-2"></i>
+                    {% elif field.name == 'supplier' %}
+                      <i class="fas fa-building me-2"></i>
+                    {% elif field.name == 'location' %}
+                      <i class="fas fa-map-marker-alt me-2"></i>
+                    {% elif field.name == 'category' %}
+                      <i class="fas fa-tag me-2"></i>
+                    {% elif field.name == 'status' %}
+                      <i class="fas fa-flag me-2"></i>
+                    {% elif field.name == 'description' or field.name == 'notes' %}
+                      <i class="fas fa-sticky-note me-2"></i>
+                    {% elif field.name == 'email' %}
+                      <i class="fas fa-envelope me-2"></i>
+                    {% elif field.name == 'phone' %}
+                      <i class="fas fa-phone me-2"></i>
+                    {% elif field.name == 'name' or field.name == 'title' %}
+                      <i class="fas fa-text-width me-2"></i>
+                    {% else %}
+                      <i class="fas fa-info-circle me-2"></i>
+                    {% endif %}
+                    {{ field.label }}
+                  </label>
+                  {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                  {% endif %}
+                  {% if field.errors %}
+                    <div class="invalid-feedback d-block" id="{{ field.id_for_label }}-error" role="alert" aria-live="polite">
+                      {{ field.errors|first }}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endfor %}
+            
+            <div class="d-flex justify-content-between align-items-center mt-4">
+              <div>
+                <button type="submit" class="btn btn-primary btn-lg me-3">
+                  <i class="fas fa-save me-2"></i>{{ submit_text|default:'Save' }}
+                </button>
+                {% if cancel_url %}
+                  <a href="{{ cancel_url }}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left me-2"></i>{{ cancel_text|default:'Cancel' }}
+                  </a>
+                {% endif %}
+              </div>
+              {% if show_required_note|default:True %}
+                <div class="text-muted">
+                  <small>
+                    <i class="fas fa-info-circle me-1"></i>
+                    All fields marked with * are required
+                  </small>
+                </div>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

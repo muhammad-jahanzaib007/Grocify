@@ -1,0 +1,408 @@
+{% comment %}
+Reusable data table component for consistent table styling across the application
+
+Usage:
+{% include 'components/data_table.html' with table_config=table_config %}
+
+Parameters:
+- table_config (required): Dictionary containing:
+  - title: Table title/caption
+  - description: Optional description
+  - columns: List of column definitions
+  - data: List of data rows
+  - actions: List of available actions
+  - show_search: Boolean for search functionality
+  - show_export: Boolean for export functionality
+  - empty_message: Custom message when no data
+  - table_id: Unique table identifier
+
+Column definition format:
+{
+  'key': 'field_name',
+  'label': 'Display Name',
+  'type': 'text|date|currency|status|actions',
+  'sortable': True/False,
+  'searchable': True/False,
+  'class': 'additional-css-classes'
+}
+
+Example:
+table_config = {
+  'title': 'Purchase Orders',
+  'description': 'Manage and track purchase orders',
+  'show_search': True,
+  'show_export': True,
+  'table_id': 'purchase-orders-table',
+  'columns': [
+    {'key': 'id', 'label': '#', 'type': 'text', 'sortable': True},
+    {'key': 'supplier__name', 'label': 'Supplier', 'type': 'text', 'sortable': True, 'searchable': True},
+    {'key': 'date_ordered', 'label': 'Date', 'type': 'date', 'sortable': True},
+    {'key': 'status', 'label': 'Status', 'type': 'status', 'sortable': True},
+    {'key': 'actions', 'label': 'Actions', 'type': 'actions', 'sortable': False}
+  ],
+  'actions': {
+    'create': {'url': 'purchases:order_create', 'label': 'New Order', 'icon': 'plus'},
+    'row_actions': [
+      {'url': 'purchases:order_detail', 'label': 'View', 'icon': 'eye', 'class': 'btn-outline-primary'},
+      {'url': 'purchases:order_update', 'label': 'Edit', 'icon': 'edit', 'class': 'btn-outline-secondary'},
+      {'url': 'purchases:order_delete', 'label': 'Delete', 'icon': 'trash', 'class': 'btn-outline-danger'}
+    ]
+  }
+}
+{% endcomment %}
+
+{% load static %}
+
+<div class="data-table-container">
+  <!-- Table Header with Actions -->
+  <div class="data-table-header">
+    <div class="table-title-section">
+      <h2 class="table-title" id="{{ table_config.table_id }}-title">
+        <i class="fas fa-table me-2" aria-hidden="true"></i>
+        {{ table_config.title }}
+      </h2>
+      {% if table_config.description %}
+        <p class="table-description text-muted">{{ table_config.description }}</p>
+      {% endif %}
+    </div>
+    
+    <div class="table-actions">
+      {% if table_config.show_search %}
+        <div class="table-search">
+          <label for="{{ table_config.table_id }}-search" class="visually-hidden">Search {{ table_config.title }}</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-search" aria-hidden="true"></i>
+            </span>
+            <input type="text" 
+                   class="form-control" 
+                   id="{{ table_config.table_id }}-search"
+                   placeholder="Search..."
+                   aria-describedby="{{ table_config.table_id }}-search-help">
+          </div>
+          <div id="{{ table_config.table_id }}-search-help" class="visually-hidden">
+            Search across all searchable columns. Results update as you type.
+          </div>
+        </div>
+      {% endif %}
+      
+      {% if table_config.actions.create %}
+        <a href="{% url table_config.actions.create.url %}" 
+           class="btn btn-primary"
+           aria-label="{{ table_config.actions.create.label }}">
+          <i class="fas fa-{{ table_config.actions.create.icon|default:'plus' }} me-2" aria-hidden="true"></i>
+          {{ table_config.actions.create.label }}
+        </a>
+      {% endif %}
+      
+      {% if table_config.show_export %}
+        <button type="button" 
+                class="btn btn-outline-secondary"
+                id="{{ table_config.table_id }}-export"
+                aria-label="Export table data">
+          <i class="fas fa-download me-2" aria-hidden="true"></i>
+          Export
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Table Container with Responsive Wrapper -->
+  <div class="table-responsive">
+    <table class="table grocify-table" 
+           id="{{ table_config.table_id }}"
+           role="table"
+           aria-labelledby="{{ table_config.table_id }}-title"
+           aria-describedby="{{ table_config.table_id }}-info">
+      
+      <!-- Table Caption for Screen Readers -->
+      <caption class="visually-hidden">
+        {{ table_config.title }}{% if table_config.description %}: {{ table_config.description }}{% endif %}
+      </caption>
+      
+      <!-- Table Header -->
+      <thead>
+        <tr role="row">
+          {% for column in table_config.columns %}
+            <th scope="col" 
+                class="table-header-cell {% if column.sortable %}sortable{% endif %} {{ column.class|default:'' }}"
+                {% if column.sortable %}
+                  tabindex="0"
+                  role="columnheader"
+                  aria-sort="none"
+                  data-sort-key="{{ column.key }}"
+                  aria-label="Sort by {{ column.label }}"
+                {% endif %}>
+              <div class="header-content">
+                <span class="header-text">{{ column.label }}</span>
+                {% if column.sortable %}
+                  <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+                {% endif %}
+              </div>
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      
+      <!-- Table Body -->
+      <tbody>
+        {% for row in table_config.data %}
+          <tr role="row" class="data-row" data-row-id="{{ row.id|default:forloop.counter }}">
+            {% for column in table_config.columns %}
+              {% if column.type == 'actions' %}
+                <td class="actions-cell">
+                  <div class="btn-group" role="group" aria-label="Row actions for {{ row }}">
+                    {% for action in table_config.actions.row_actions %}
+                      <a href="{% url action.url row.id %}" 
+                         class="btn btn-sm {{ action.class|default:'btn-outline-primary' }}"
+                         aria-label="{{ action.label }} {{ row }}"
+                         title="{{ action.label }}">
+                        <i class="fas fa-{{ action.icon }} me-1" aria-hidden="true"></i>
+                        <span class="d-none d-md-inline">{{ action.label }}</span>
+                      </a>
+                    {% endfor %}
+                  </div>
+                </td>
+              {% elif column.type == 'status' %}
+                <td class="status-cell">
+                  {% with status_value=row|lookup:column.key %}
+                    <span class="badge status-badge status-{{ status_value|lower|slugify }}"
+                          aria-label="Status: {{ status_value }}">
+                      {{ status_value }}
+                    </span>
+                  {% endwith %}
+                </td>
+              {% elif column.type == 'currency' %}
+                <td class="currency-cell">
+                  <span class="currency-value" aria-label="{{ row|lookup:column.key }} currency">
+                    Rs {{ row|lookup:column.key|floatformat:0 }}
+                  </span>
+                </td>
+              {% elif column.type == 'date' %}
+                <td class="date-cell">
+                  {% with date_value=row|lookup:column.key %}
+                    <time datetime="{{ date_value|date:'Y-m-d' }}" 
+                          aria-label="{{ date_value|date:'F j, Y' }}">
+                      {{ date_value|date:'M j, Y' }}
+                    </time>
+                  {% endwith %}
+                </td>
+              {% else %}
+                <td class="text-cell {{ column.class|default:'' }}">
+                  {% with cell_value=row|lookup:column.key %}
+                    {% if cell_value %}
+                      {{ cell_value }}
+                    {% else %}
+                      <span class="text-muted" aria-label="No data">—</span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+              {% endif %}
+            {% endfor %}
+          </tr>
+        {% empty %}
+          <tr class="empty-row">
+            <td colspan="{{ table_config.columns|length }}" class="text-center empty-state">
+              <div class="empty-state-content">
+                <i class="fas fa-inbox fa-3x text-muted mb-3" aria-hidden="true"></i>
+                <p class="empty-message">
+                  {{ table_config.empty_message|default:"No data available" }}
+                </p>
+                {% if table_config.actions.create %}
+                  <a href="{% url table_config.actions.create.url %}" 
+                     class="btn btn-primary"
+                     aria-label="Create first {{ table_config.actions.create.label|lower }}">
+                    <i class="fas fa-{{ table_config.actions.create.icon|default:'plus' }} me-2" aria-hidden="true"></i>
+                    Create First {{ table_config.actions.create.label }}
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Table Info and Pagination -->
+  <div class="table-footer">
+    <div class="table-info" id="{{ table_config.table_id }}-info" aria-live="polite">
+      {% if table_config.data %}
+        Showing {{ table_config.data|length }} 
+        {% if table_config.data|length == 1 %}item{% else %}items{% endif %}
+      {% endif %}
+    </div>
+    
+    {% if table_config.pagination %}
+      <nav aria-label="Table pagination" class="table-pagination">
+        <!-- Pagination controls would go here if needed -->
+      </nav>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Table JavaScript for Enhanced Functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const tableId = '{{ table_config.table_id }}';
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  
+  // Enhanced table functionality
+  const tableManager = {
+    init() {
+      this.setupSorting();
+      this.setupSearch();
+      this.setupKeyboardNavigation();
+      this.setupExport();
+    },
+    
+    setupSorting() {
+      const sortableHeaders = table.querySelectorAll('.sortable');
+      sortableHeaders.forEach(header => {
+        header.addEventListener('click', (e) => {
+          this.handleSort(header);
+        });
+        
+        header.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.handleSort(header);
+          }
+        });
+      });
+    },
+    
+    handleSort(header) {
+      const sortKey = header.dataset.sortKey;
+      const currentSort = header.getAttribute('aria-sort');
+      const newSort = currentSort === 'ascending' ? 'descending' : 'ascending';
+      
+      // Reset all other headers
+      table.querySelectorAll('.sortable').forEach(h => {
+        h.setAttribute('aria-sort', 'none');
+        h.querySelector('.sort-icon').className = 'fas fa-sort sort-icon';
+      });
+      
+      // Set new sort
+      header.setAttribute('aria-sort', newSort);
+      const icon = header.querySelector('.sort-icon');
+      icon.className = `fas fa-sort-${newSort === 'ascending' ? 'up' : 'down'} sort-icon`;
+      
+      // Announce sort change
+      const announcement = `Table sorted by ${header.textContent.trim()} in ${newSort} order`;
+      this.announceToScreenReader(announcement);
+      
+      // Here you would implement actual sorting logic or make an AJAX request
+      console.log(`Sorting by ${sortKey} in ${newSort} order`);
+    },
+    
+    setupSearch() {
+      const searchInput = document.getElementById(`${tableId}-search`);
+      if (!searchInput) return;
+      
+      let searchTimeout;
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          this.performSearch(e.target.value);
+        }, 300);
+      });
+    },
+    
+    performSearch(query) {
+      const rows = table.querySelectorAll('.data-row');
+      let visibleCount = 0;
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const matches = text.includes(query.toLowerCase());
+        
+        row.style.display = matches || !query ? '' : 'none';
+        if (matches || !query) visibleCount++;
+      });
+      
+      // Update table info
+      const tableInfo = document.getElementById(`${tableId}-info`);
+      if (tableInfo) {
+        tableInfo.textContent = query ? 
+          `Showing ${visibleCount} of ${rows.length} items (filtered)` :
+          `Showing ${rows.length} items`;
+      }
+    },
+    
+    setupKeyboardNavigation() {
+      table.addEventListener('keydown', (e) => {
+        if (e.target.matches('.data-row')) {
+          switch(e.key) {
+            case 'ArrowDown':
+              e.preventDefault();
+              this.focusNextRow(e.target);
+              break;
+            case 'ArrowUp':
+              e.preventDefault();
+              this.focusPreviousRow(e.target);
+              break;
+          }
+        }
+      });
+    },
+    
+    focusNextRow(currentRow) {
+      const nextRow = currentRow.nextElementSibling;
+      if (nextRow && nextRow.classList.contains('data-row')) {
+        nextRow.focus();
+      }
+    },
+    
+    focusPreviousRow(currentRow) {
+      const prevRow = currentRow.previousElementSibling;
+      if (prevRow && prevRow.classList.contains('data-row')) {
+        prevRow.focus();
+      }
+    },
+    
+    setupExport() {
+      const exportBtn = document.getElementById(`${tableId}-export`);
+      if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+          this.exportToCSV();
+        });
+      }
+    },
+    
+    exportToCSV() {
+      // Simple CSV export functionality
+      const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
+      const rows = Array.from(table.querySelectorAll('.data-row')).map(row => 
+        Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim())
+      );
+      
+      const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tableId}-export.csv`;
+      a.click();
+      
+      window.URL.revokeObjectURL(url);
+      this.announceToScreenReader('Table data exported to CSV file');
+    },
+    
+    announceToScreenReader(message) {
+      const announcement = document.createElement('div');
+      announcement.setAttribute('aria-live', 'polite');
+      announcement.setAttribute('aria-atomic', 'true');
+      announcement.classList.add('visually-hidden');
+      announcement.textContent = message;
+      
+      document.body.appendChild(announcement);
+      setTimeout(() => document.body.removeChild(announcement), 1000);
+    }
+  };
+  
+  tableManager.init();
+});
+</script>

@@ -1,8 +1,667 @@
-{% extends "base.html" %}
-{% block title %}Users{% endblock %}
-{% block page_title %}
-<h1>Users</h1>
+{% extends 'base.html' %}
+{% load static %}
+{% load table_helpers %}
+
+{% block title %}User Management{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:admin_dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Users</li>
+  </ol>
+</nav>
 {% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grocify-design-system.css' %}">
+<style>
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-sm);
+    color: var(--text-inverse);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.user-details h6 {
+    margin: 0;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+}
+
+.user-details small {
+    color: var(--text-muted);
+}
+
+.role-badge {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--border-radius-sm);
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: var(--font-size-sm);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-online .status-dot {
+    background: var(--success);
+}
+
+.status-offline .status-dot {
+    background: var(--text-muted);
+}
+
+.last-login {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.permissions-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+}
+
+.permission-tag {
+    font-size: var(--font-size-xs);
+    padding: 2px var(--space-xs);
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-secondary);
+}
+
+.user-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<p>This is a placeholder for the user list.</p>
+<!-- User Management Header -->
+<div class="user-header mb-4" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 2rem; border-radius: 12px;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-2" style="color: inherit;">
+                <i class="fas fa-users me-3"></i>User Management
+            </h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+                Manage user accounts, roles, and permissions across the system
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light" onclick="exportUsers()">
+                <i class="fas fa-file-export me-2"></i>Export
+            </button>
+            <button type="button" class="btn btn-light" onclick="openInviteModal()">
+                <i class="fas fa-user-plus me-2"></i>Invite User
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- User Statistics -->
+<div class="user-metrics">
+    <div class="metric-card enhanced">
+        <div class="metric-icon-container">
+            <div class="metric-icon success">
+                <i class="fas fa-users"></i>
+            </div>
+        </div>
+        <div class="metric-content">
+            <h3 class="metric-value">24</h3>
+            <p class="metric-label">Total Users</p>
+            <div class="metric-trend positive">
+                <i class="fas fa-arrow-up"></i>
+                <span class="trend-percentage">+3</span>
+                <span class="trend-period text-muted">this month</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="metric-card enhanced">
+        <div class="metric-icon-container">
+            <div class="metric-icon primary">
+                <i class="fas fa-user-check"></i>
+            </div>
+        </div>
+        <div class="metric-content">
+            <h3 class="metric-value">18</h3>
+            <p class="metric-label">Active Users</p>
+            <div class="metric-trend positive">
+                <i class="fas fa-arrow-up"></i>
+                <span class="trend-percentage">+2</span>
+                <span class="trend-period text-muted">online now</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="metric-card enhanced">
+        <div class="metric-icon-container">
+            <div class="metric-icon warning">
+                <i class="fas fa-user-shield"></i>
+            </div>
+        </div>
+        <div class="metric-content">
+            <h3 class="metric-value">4</h3>
+            <p class="metric-label">Administrators</p>
+            <div class="metric-trend neutral">
+                <i class="fas fa-minus"></i>
+                <span class="trend-period text-muted">system admins</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="metric-card enhanced">
+        <div class="metric-icon-container">
+            <div class="metric-icon info">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+        <div class="metric-content">
+            <h3 class="metric-value">6</h3>
+            <p class="metric-label">Pending Invites</p>
+            <div class="metric-trend neutral">
+                <i class="fas fa-envelope"></i>
+                <span class="trend-period text-muted">awaiting response</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Users Data Table -->
+<div class="data-table-container">
+  <!-- Table Header with Actions -->
+  <div class="data-table-header">
+    <div class="table-title-section">
+      <h2 class="table-title" id="users-table-title">
+        <i class="fas fa-table me-2" aria-hidden="true"></i>
+        All Users
+      </h2>
+      <p class="table-description text-muted">Manage user accounts and permissions</p>
+    </div>
+    
+    <div class="table-actions">
+      <div class="role-filters d-flex gap-2 me-3">
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-sm btn-outline-secondary active" data-filter="all">All</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="admin">Admins</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="manager">Managers</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="staff">Staff</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="inactive">Inactive</button>
+        </div>
+      </div>
+      
+      <div class="table-search">
+        <label for="users-table-search" class="visually-hidden">Search Users</label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="fas fa-search" aria-hidden="true"></i>
+          </span>
+          <input type="text" 
+                 class="form-control" 
+                 id="users-table-search"
+                 placeholder="Search users..."
+                 aria-describedby="users-table-search-help">
+        </div>
+        <div id="users-table-search-help" class="visually-hidden">
+          Search across names, emails, and roles. Results update as you type.
+        </div>
+      </div>
+      
+      <button type="button" 
+              class="btn btn-primary"
+              onclick="openInviteModal()"
+              aria-label="Invite New User">
+        <i class="fas fa-user-plus me-2" aria-hidden="true"></i>
+        Invite User
+      </button>
+      
+      <button type="button" 
+              class="btn btn-outline-secondary"
+              id="users-table-export"
+              aria-label="Export table data">
+        <i class="fas fa-download me-2" aria-hidden="true"></i>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Container with Responsive Wrapper -->
+  <div class="table-responsive">
+    <table class="table grocify-table" 
+           id="users-table"
+           role="table"
+           aria-labelledby="users-table-title"
+           aria-describedby="users-table-info">
+      
+      <caption class="visually-hidden">
+        User Management: View and manage all user accounts and permissions
+      </caption>
+      
+      <!-- Table Header -->
+      <thead>
+        <tr role="row">
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="name" aria-label="Sort by User">
+            <div class="header-content">
+              <span class="header-text">User</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="role" aria-label="Sort by Role">
+            <div class="header-content">
+              <span class="header-text">Role</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="status" aria-label="Sort by Status">
+            <div class="header-content">
+              <span class="header-text">Status</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell sortable" tabindex="0" role="columnheader" aria-sort="none" data-sort-key="last_login" aria-label="Sort by Last Login">
+            <div class="header-content">
+              <span class="header-text">Last Login</span>
+              <i class="fas fa-sort sort-icon" aria-hidden="true"></i>
+            </div>
+          </th>
+          <th scope="col" class="table-header-cell">Permissions</th>
+          <th scope="col" class="table-header-cell">Actions</th>
+        </tr>
+      </thead>
+      
+      <!-- Table Body -->
+      <tbody>
+        <!-- Sample User Data -->
+        <tr role="row" class="data-row" data-row-id="1">
+          <td class="text-cell">
+            <div class="user-info">
+              <div class="user-avatar">JD</div>
+              <div class="user-details">
+                <h6>John Doe</h6>
+                <small>john.doe@example.com</small>
+              </div>
+            </div>
+          </td>
+          <td class="status-cell">
+            <span class="badge bg-danger role-badge">Administrator</span>
+          </td>
+          <td class="status-cell">
+            <div class="status-indicator status-online">
+              <span class="status-dot"></span>
+              <span>Online</span>
+            </div>
+          </td>
+          <td class="date-cell">
+            <div>
+              <time datetime="2025-07-21T14:30:00">Jul 21, 2025</time>
+              <div class="last-login">2 hours ago</div>
+            </div>
+          </td>
+          <td class="text-cell">
+            <div class="permissions-list">
+              <span class="permission-tag">All Access</span>
+              <span class="permission-tag">User Mgmt</span>
+              <span class="permission-tag">Reports</span>
+            </div>
+          </td>
+          <td class="actions-cell">
+            <div class="btn-group" role="group" aria-label="Actions for user John Doe">
+              <button type="button" 
+                      class="btn btn-sm btn-outline-primary"
+                      onclick="viewUser(1)"
+                      aria-label="View user John Doe"
+                      title="View">
+                <i class="fas fa-eye me-1" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">View</span>
+              </button>
+              <button type="button" 
+                      class="btn btn-sm btn-outline-secondary"
+                      onclick="editUser(1)"
+                      aria-label="Edit user John Doe"
+                      title="Edit">
+                <i class="fas fa-edit me-1" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">Edit</span>
+              </button>
+              <button type="button" 
+                      class="btn btn-sm btn-outline-warning"
+                      onclick="resetPassword(1)"
+                      aria-label="Reset password for John Doe"
+                      title="Reset Password">
+                <i class="fas fa-key me-1" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">Reset</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        
+        <tr role="row" class="data-row" data-row-id="2">
+          <td class="text-cell">
+            <div class="user-info">
+              <div class="user-avatar" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">SA</div>
+              <div class="user-details">
+                <h6>Sarah Anderson</h6>
+                <small>sarah.anderson@example.com</small>
+              </div>
+            </div>
+          </td>
+          <td class="status-cell">
+            <span class="badge bg-primary role-badge">Manager</span>
+          </td>
+          <td class="status-cell">
+            <div class="status-indicator status-online">
+              <span class="status-dot"></span>
+              <span>Online</span>
+            </div>
+          </td>
+          <td class="date-cell">
+            <div>
+              <time datetime="2025-07-21T13:15:00">Jul 21, 2025</time>
+              <div class="last-login">3 hours ago</div>
+            </div>
+          </td>
+          <td class="text-cell">
+            <div class="permissions-list">
+              <span class="permission-tag">Inventory</span>
+              <span class="permission-tag">Sales</span>
+              <span class="permission-tag">Reports</span>
+            </div>
+          </td>
+          <td class="actions-cell">
+            <div class="btn-group" role="group" aria-label="Actions for user Sarah Anderson">
+              <button type="button" 
+                      class="btn btn-sm btn-outline-primary"
+                      onclick="viewUser(2)"
+                      aria-label="View user Sarah Anderson"
+                      title="View">
+                <i class="fas fa-eye me-1" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">View</span>
+              </button>
+              <button type="button" 
+                      class="btn btn-sm btn-outline-secondary"
+                      onclick="editUser(2)"
+                      aria-label="Edit user Sarah Anderson"
+                      title="Edit">
+                <i class="fas fa-edit me-1" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">Edit</span>
+              </button>
+              <button type="button" 
+                      class="btn btn-sm btn-outline-warning"
+                      onclick="resetPassword(2)"
+                      aria-label="Reset password for Sarah Anderson"
+                      title="Reset Password">
+                <i class="fas fa-key me-1" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">Reset</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        
+        <tr role="row" class="data-row" data-row-id="3">
+          <td class="text-cell">
+            <div class="user-info">
+              <div class="user-avatar" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">MJ</div>
+              <div class="user-details">
+                <h6>Mike Johnson</h6>
+                <small>mike.johnson@example.com</small>
+              </div>
+            </div>
+          </td>
+          <td class="status-cell">
+            <span class="badge bg-success role-badge">Staff</span>
+          </td>
+          <td class="status-cell">
+            <div class="status-indicator status-offline">
+              <span class="status-dot"></span>
+              <span>Offline</span>
+            </div>
+          </td>
+          <td class="date-cell">
+            <div>
+              <time datetime="2025-07-20T18:45:00">Jul 20, 2025</time>
+              <div class="last-login">1 day ago</div>
+            </div>
+          </td>
+          <td class="text-cell">
+            <div class="permissions-list">
+              <span class="permission-tag">POS</span>
+              <span class="permission-tag">Customers</span>
+            </div>
+          </td>
+          <td class="actions-cell">
+            <div class="btn-group" role="group" aria-label="Actions for user Mike Johnson">
+              <button type="button" 
+                      class="btn btn-sm btn-outline-primary"
+                      onclick="viewUser(3)"
+                      aria-label="View user Mike Johnson"
+                      title="View">
+                <i class="fas fa-eye me-1" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">View</span>
+              </button>
+              <button type="button" 
+                      class="btn btn-sm btn-outline-secondary"
+                      onclick="editUser(3)"
+                      aria-label="Edit user Mike Johnson"
+                      title="Edit">
+                <i class="fas fa-edit me-1" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">Edit</span>
+              </button>
+              <button type="button" 
+                      class="btn btn-sm btn-outline-danger"
+                      onclick="suspendUser(3)"
+                      aria-label="Suspend user Mike Johnson"
+                      title="Suspend">
+                <i class="fas fa-user-slash me-1" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">Suspend</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Table Footer -->
+  <div class="table-footer">
+    <div class="table-info" id="users-table-info" aria-live="polite">
+      Showing 3 users
+    </div>
+  </div>
+</div>
+
+<!-- User Invite Modal -->
+<div class="modal fade" id="inviteUserModal" tabindex="-1" aria-labelledby="inviteUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="inviteUserModalLabel">
+          <i class="fas fa-user-plus me-2"></i>Invite New User
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="inviteUserForm">
+          <div class="form-floating mb-3">
+            <input type="email" class="form-control" id="inviteEmail" placeholder="Email address" required>
+            <label for="inviteEmail">Email Address</label>
+          </div>
+          
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="inviteFirstName" placeholder="First name" required>
+            <label for="inviteFirstName">First Name</label>
+          </div>
+          
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="inviteLastName" placeholder="Last name" required>
+            <label for="inviteLastName">Last Name</label>
+          </div>
+          
+          <div class="form-floating mb-3">
+            <select class="form-select" id="inviteRole" required>
+              <option value="">Choose role...</option>
+              <option value="staff">Staff</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Administrator</option>
+            </select>
+            <label for="inviteRole">Role</label>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Permissions</label>
+            <div class="permissions-checkboxes">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="permPOS" value="pos">
+                <label class="form-check-label" for="permPOS">Point of Sale</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="permInventory" value="inventory">
+                <label class="form-check-label" for="permInventory">Inventory Management</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="permReports" value="reports">
+                <label class="form-check-label" for="permReports">Reports & Analytics</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="permUsers" value="users">
+                <label class="form-check-label" for="permUsers">User Management</label>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="sendInvite()">
+          <i class="fas fa-paper-plane me-2"></i>Send Invite
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupUserFilters();
+    setupUserSearch();
+    setupUserSort();
+    setupUserExport();
+});
+
+function openInviteModal() {
+    const modal = new bootstrap.Modal(document.getElementById('inviteUserModal'));
+    modal.show();
+}
+
+function sendInvite() {
+    console.log('Sending invite...');
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('inviteUserModal'));
+    modal.hide();
+    
+    // Show success message
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('success', 'Invite Sent', 'User invitation has been sent successfully.');
+    }
+}
+
+function viewUser(userId) {
+    console.log('Viewing user:', userId);
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'User Details', 'Opening user profile...');
+    }
+}
+
+function editUser(userId) {
+    console.log('Editing user:', userId);
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Edit User', 'Opening user editor...');
+    }
+}
+
+function resetPassword(userId) {
+    console.log('Resetting password for user:', userId);
+    if (confirm('Are you sure you want to reset this user\'s password?')) {
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Password Reset', 'Password reset email has been sent.');
+        }
+    }
+}
+
+function suspendUser(userId) {
+    console.log('Suspending user:', userId);
+    if (confirm('Are you sure you want to suspend this user?')) {
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('warning', 'User Suspended', 'User account has been suspended.');
+        }
+    }
+}
+
+function exportUsers() {
+    console.log('Exporting users...');
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Export Started', 'User report is being generated.');
+    }
+}
+
+function setupUserFilters() {
+    const filterButtons = document.querySelectorAll('.role-filters button[data-filter]');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+}
+
+function setupUserSearch() {
+    const searchInput = document.getElementById('users-table-search');
+    searchInput.addEventListener('input', function(e) {
+        console.log('Searching:', e.target.value);
+    });
+}
+
+function setupUserSort() {
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            console.log('Sorting by:', header.dataset.sortKey);
+        });
+    });
+}
+
+function setupUserExport() {
+    const exportButton = document.getElementById('users-table-export');
+    exportButton.addEventListener('click', exportUsers);
+}
+</script>
 {% endblock %}

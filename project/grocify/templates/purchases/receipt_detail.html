@@ -1,59 +1,305 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Receipt #{{ purchase_receipt.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .receipt-header {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  .info-card {
+    transition: box-shadow 0.15s ease-in-out;
+    border: 1px solid #dee2e6;
+  }
+  .info-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+  .status-badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+  }
+  .item-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: white;
+    transition: box-shadow 0.15s ease-in-out;
+  }
+  .item-card:hover {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+  .quantity-display {
+    background: #e8f5e8;
+    color: #155724;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+  }
+  .damaged-display {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'purchases:order_list' %}">Purchases</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'purchases:order_detail' purchase_receipt.purchase_order.id %}">Order #{{ purchase_receipt.purchase_order.id }}</a></li>
+    <li class="breadcrumb-item">
+      <a href="{% url 'purchases:order_list' %}"><i class="fas fa-shopping-cart"></i> Purchases</a>
+    </li>
+    <li class="breadcrumb-item">
+      <a href="{% url 'purchases:order_detail' purchase_receipt.purchase_order.id %}">
+        Order #{{ purchase_receipt.purchase_order.id }}
+      </a>
+    </li>
     <li class="breadcrumb-item active" aria-current="page">Receipt #{{ purchase_receipt.id }}</li>
   </ol>
 </nav>
 {% endblock %}
 
-{% block page_title %}
-<h1>Receipt #{{ purchase_receipt.id }}</h1>
-{% endblock %}
-
 {% block content %}
 <div class="container mt-4">
-  <div class="card mb-4">
+  <!-- Receipt Header -->
+  <div class="receipt-header">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h2 class="mb-2">
+          <i class="fas fa-receipt"></i> Receipt #{{ purchase_receipt.id }}
+        </h2>
+        <p class="mb-0 opacity-75">
+          Items received for Purchase Order #{{ purchase_receipt.purchase_order.id }}
+        </p>
+      </div>
+      <div class="col-md-4 text-end">
+        <span class="badge bg-light text-success fs-6 px-3 py-2">
+          <i class="fas fa-check-circle"></i> Completed
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt Information -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-6">
+      <div class="card info-card h-100">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-info-circle"></i> Receipt Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-4"><strong>Purchase Order:</strong></div>
+            <div class="col-8">
+              <a href="{% url 'purchases:order_detail' purchase_receipt.purchase_order.id %}" 
+                 class="text-decoration-none">
+                <i class="fas fa-file-invoice"></i> #{{ purchase_receipt.purchase_order.id }}
+              </a>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-4"><strong>Received By:</strong></div>
+            <div class="col-8">
+              <i class="fas fa-user"></i> {{ purchase_receipt.received_by.get_full_name|default:purchase_receipt.received_by.username }}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-4"><strong>Received At:</strong></div>
+            <div class="col-8">
+              <i class="fas fa-clock"></i> {{ purchase_receipt.received_at|date:"M d, Y g:i A" }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4"><strong>Supplier:</strong></div>
+            <div class="col-8">
+              <i class="fas fa-building"></i> {{ purchase_receipt.purchase_order.supplier.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="card info-card h-100">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-sticky-note"></i> Receipt Notes</h5>
+        </div>
+        <div class="card-body">
+          {% if purchase_receipt.notes %}
+            <p class="mb-0">{{ purchase_receipt.notes|linebreaks }}</p>
+          {% else %}
+            <p class="text-muted mb-0"><em>No notes added</em></p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Received Items -->
+  <div class="card">
+    <div class="card-header">
+      <div class="row align-items-center">
+        <div class="col">
+          <h5 class="mb-0"><i class="fas fa-boxes"></i> Received Items</h5>
+        </div>
+        <div class="col-auto">
+          <span class="badge bg-primary">
+            {{ purchase_receipt.items.count }} item{{ purchase_receipt.items.count|pluralize }}
+          </span>
+        </div>
+      </div>
+    </div>
     <div class="card-body">
-      <h5>Order:</h5> <a href="{% url 'purchases:order_detail' purchase_receipt.purchase_order.id %}">#{{ purchase_receipt.purchase_order.id }}</a>
-      <h5>Received By:</h5> {{ purchase_receipt.received_by.username }}
-      <h5>Received At:</h5> {{ purchase_receipt.received_at }}
-      {% if purchase_receipt.notes %}
-        <h5>Notes:</h5>
-        <p>{{ purchase_receipt.notes }}</p>
+      {% if purchase_receipt.items.all %}
+        <div class="row g-3">
+          {% for item in purchase_receipt.items.all %}
+            <div class="col-12">
+              <div class="item-card">
+                <div class="row align-items-center">
+                  <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                      <div class="bg-primary bg-opacity-10 rounded p-3 me-3">
+                        <i class="fas fa-cube text-primary fa-lg"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-1">{{ item.purchase_item.product.name }}</h6>
+                        {% if item.purchase_item.product.sku %}
+                          <small class="text-muted">SKU: {{ item.purchase_item.product.sku }}</small>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="col-md-2 text-center">
+                    <small class="text-muted d-block">Ordered</small>
+                    <strong class="h6">{{ item.purchase_item.quantity }}</strong>
+                  </div>
+                  
+                  <div class="col-md-2 text-center">
+                    <small class="text-muted d-block">Received</small>
+                    <span class="quantity-display">{{ item.quantity_received }}</span>
+                  </div>
+                  
+                  <div class="col-md-2 text-center">
+                    <small class="text-muted d-block">Damaged</small>
+                    {% if item.quantity_damaged > 0 %}
+                      <span class="damaged-display">{{ item.quantity_damaged }}</span>
+                    {% else %}
+                      <span class="text-muted">0</span>
+                    {% endif %}
+                  </div>
+                  
+                  <div class="col-md-2 text-center">
+                    <small class="text-muted d-block">Good Units</small>
+                    <strong class="text-success h6">
+                      {% widthratio item.quantity_received 1 1 as received %}
+                      {% widthratio item.quantity_damaged 1 1 as damaged %}
+                      {{ received|add:damaged|sub:damaged }}
+                    </strong>
+                  </div>
+                </div>
+                
+                {% if item.notes %}
+                  <div class="row mt-3">
+                    <div class="col-12">
+                      <div class="bg-light rounded p-2">
+                        <small class="text-muted d-block mb-1">Notes:</small>
+                        <small>{{ item.notes }}</small>
+                      </div>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <div class="mb-4">
+            <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+              <i class="fas fa-inbox fa-3x text-muted"></i>
+            </div>
+          </div>
+          <h5 class="fw-bold text-dark mb-2">No items received</h5>
+          <p class="text-muted mb-0">No items were recorded for this receipt.</p>
+        </div>
       {% endif %}
     </div>
   </div>
 
-  <h4>Received Items</h4>
-  <table class="table table-bordered table-hover">
-    <thead class="table-light">
-      <tr>
-        <th>Product</th>
-        <th>Qty Received</th>
-        <th>Qty Damaged</th>
-        <th>Notes</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in purchase_receipt.items.all %}
-      <tr>
-        <td>{{ item.purchase_item.product.name }}</td>
-        <td>{{ item.quantity_received }}</td>
-        <td>{{ item.quantity_damaged }}</td>
-        <td>{{ item.notes }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="4" class="text-center">No items found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <!-- Summary Stats -->
+  {% if purchase_receipt.items.all %}
+    <div class="row g-3 mt-4">
+      <div class="col-md-3">
+        <div class="card border-primary">
+          <div class="card-body text-center">
+            <div class="text-primary">
+              <i class="fas fa-boxes fa-2x mb-2"></i>
+            </div>
+            <h4 class="card-title">{{ purchase_receipt.items.count }}</h4>
+            <p class="card-text text-muted">Product{{ purchase_receipt.items.count|pluralize }} Received</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="card border-success">
+          <div class="card-body text-center">
+            <div class="text-success">
+              <i class="fas fa-check-circle fa-2x mb-2"></i>
+            </div>
+            <h4 class="card-title">
+              {% for item in purchase_receipt.items.all %}
+                {% add item.quantity_received as total_received %}
+              {% endfor %}
+              {{ total_received|default:0 }}
+            </h4>
+            <p class="card-text text-muted">Total Units Received</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="card border-warning">
+          <div class="card-body text-center">
+            <div class="text-warning">
+              <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+            </div>
+            <h4 class="card-title">
+              {% for item in purchase_receipt.items.all %}
+                {% add item.quantity_damaged as total_damaged %}
+              {% endfor %}
+              {{ total_damaged|default:0 }}
+            </h4>
+            <p class="card-text text-muted">Damaged Units</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="card border-info">
+          <div class="card-body text-center">
+            <div class="text-info">
+              <i class="fas fa-thumbs-up fa-2x mb-2"></i>
+            </div>
+            <h4 class="card-title">
+              {% widthratio total_received|default:0 1 1 as received_calc %}
+              {% widthratio total_damaged|default:0 1 1 as damaged_calc %}
+              {{ received_calc|sub:damaged_calc }}
+            </h4>
+            <p class="card-text text-muted">Good Units</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}

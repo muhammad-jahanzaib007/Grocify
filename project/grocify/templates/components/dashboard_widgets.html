@@ -1,0 +1,398 @@
+{% comment %}
+Reusable dashboard widget components for data visualization
+
+Usage:
+{% include 'components/dashboard_widgets.html' with widget_type='chart' widget_config=chart_config %}
+
+Widget Types:
+- metric_card: KPI metric with trend indicator
+- chart_card: Chart container with responsive design
+- data_table_card: Table with analytics data
+- progress_card: Progress bar with percentage
+- alert_card: Status alerts and notifications
+{% endcomment %}
+
+{% load static %}
+{% load table_helpers %}
+
+{% if widget_type == 'metric_card' %}
+<!-- Metric Card Widget -->
+<div class="metric-card {{ widget_config.variant|default:'primary' }} {{ widget_config.class|default:'' }}" 
+     role="region" 
+     aria-labelledby="metric-{{ widget_config.id }}-title">
+  
+  <div class="metric-icon-container">
+    <div class="metric-icon {{ widget_config.variant|default:'primary' }}">
+      <i class="fas fa-{{ widget_config.icon|default:'chart-line' }}" aria-hidden="true"></i>
+    </div>
+  </div>
+  
+  <div class="metric-content">
+    <h3 class="metric-value" id="metric-{{ widget_config.id }}-title" aria-live="polite">
+      {{ widget_config.value|default:'0' }}
+    </h3>
+    <p class="metric-label">{{ widget_config.label|default:'Metric' }}</p>
+    
+    {% if widget_config.trend %}
+    <div class="metric-trend {{ widget_config.trend.direction|default:'neutral' }}" 
+         aria-label="Trend: {{ widget_config.trend.direction }} {{ widget_config.trend.percentage }}%">
+      {% if widget_config.trend.direction == 'up' %}
+        <i class="fas fa-arrow-up" aria-hidden="true"></i>
+      {% elif widget_config.trend.direction == 'down' %}
+        <i class="fas fa-arrow-down" aria-hidden="true"></i>
+      {% else %}
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      {% endif %}
+      <span class="trend-percentage">{{ widget_config.trend.percentage }}%</span>
+      <span class="trend-period text-muted">{{ widget_config.trend.period|default:'vs last month' }}</span>
+    </div>
+    {% endif %}
+  </div>
+  
+  {% if widget_config.sparkline %}
+  <div class="metric-sparkline">
+    <canvas id="sparkline-{{ widget_config.id }}" 
+            width="100" 
+            height="30" 
+            aria-label="Trend sparkline chart for {{ widget_config.label }}"></canvas>
+  </div>
+  {% endif %}
+</div>
+
+{% elif widget_type == 'chart_card' %}
+<!-- Chart Card Widget -->
+<div class="chart-card {{ widget_config.class|default:'' }}" 
+     role="img" 
+     aria-labelledby="chart-{{ widget_config.id }}-title">
+  
+  <div class="chart-header">
+    <h3 class="chart-title" id="chart-{{ widget_config.id }}-title">
+      {{ widget_config.title|default:'Chart' }}
+    </h3>
+    
+    {% if widget_config.subtitle %}
+    <p class="chart-subtitle text-muted">{{ widget_config.subtitle }}</p>
+    {% endif %}
+    
+    <div class="chart-actions">
+      {% if widget_config.show_period_selector %}
+      <div class="period-selector">
+        <button type="button" class="btn btn-sm btn-outline-secondary active" data-period="7d">7D</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="30d">30D</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="90d">90D</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="1y">1Y</button>
+      </div>
+      {% endif %}
+      
+      {% if widget_config.show_export %}
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary" 
+              onclick="grocifyCharts.exportChart('{{ widget_config.canvas_id }}', '{{ widget_config.title|slugify }}')"
+              aria-label="Export {{ widget_config.title }} chart">
+        <i class="fas fa-download" aria-hidden="true"></i>
+      </button>
+      {% endif %}
+      
+      {% if widget_config.show_fullscreen %}
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary" 
+              onclick="toggleChartFullscreen('{{ widget_config.id }}')"
+              aria-label="View {{ widget_config.title }} in fullscreen">
+        <i class="fas fa-expand" aria-hidden="true"></i>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  
+  <div class="chart-container">
+    <canvas id="{{ widget_config.canvas_id }}" 
+            aria-label="{{ widget_config.title }} chart visualization"></canvas>
+    
+    {% if widget_config.loading %}
+    <div class="chart-loading" id="loading-{{ widget_config.id }}">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading chart data...</span>
+      </div>
+      <p class="loading-text">Loading {{ widget_config.title|lower }}...</p>
+    </div>
+    {% endif %}
+  </div>
+  
+  {% if widget_config.footer %}
+  <div class="chart-footer">
+    <small class="text-muted">{{ widget_config.footer }}</small>
+  </div>
+  {% endif %}
+</div>
+
+{% elif widget_type == 'data_table_card' %}
+<!-- Data Table Card Widget -->
+<div class="data-table-card {{ widget_config.class|default:'' }}" 
+     role="region" 
+     aria-labelledby="table-{{ widget_config.id }}-title">
+  
+  <div class="table-card-header">
+    <h3 class="table-card-title" id="table-{{ widget_config.id }}-title">
+      {{ widget_config.title|default:'Data Table' }}
+    </h3>
+    
+    {% if widget_config.show_search %}
+    <div class="table-search-mini">
+      <input type="text" 
+             class="form-control form-control-sm" 
+             placeholder="Search..." 
+             id="search-{{ widget_config.id }}"
+             aria-label="Search {{ widget_config.title }}">
+    </div>
+    {% endif %}
+  </div>
+  
+  <div class="table-responsive">
+    <table class="table table-sm" 
+           id="table-{{ widget_config.id }}" 
+           aria-labelledby="table-{{ widget_config.id }}-title">
+      <thead>
+        <tr>
+          {% for column in widget_config.columns %}
+          <th scope="col" class="{{ column.class|default:'' }}">{{ column.label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in widget_config.data %}
+        <tr>
+          {% for column in widget_config.columns %}
+          <td class="{{ column.class|default:'' }}">
+            {% if column.type == 'currency' %}
+              Rs {{ row|lookup:column.key|floatformat:0 }}
+            {% elif column.type == 'percentage' %}
+              {{ row|lookup:column.key }}%
+            {% elif column.type == 'badge' %}
+              <span class="badge bg-{{ row|lookup:column.key|lower }}-subtle text-{{ row|lookup:column.key|lower }}">
+                {{ row|lookup:column.key }}
+              </span>
+            {% else %}
+              {{ row|lookup:column.key }}
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{{ widget_config.columns|length }}" class="text-center text-muted">
+            No data available
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  {% if widget_config.show_pagination and widget_config.data|length > 5 %}
+  <div class="table-card-footer">
+    <small class="text-muted">
+      Showing {{ widget_config.data|length }} of {{ widget_config.total|default:widget_config.data|length }} items
+    </small>
+  </div>
+  {% endif %}
+</div>
+
+{% elif widget_type == 'progress_card' %}
+<!-- Progress Card Widget -->
+<div class="progress-card {{ widget_config.class|default:'' }}" 
+     role="region" 
+     aria-labelledby="progress-{{ widget_config.id }}-title">
+  
+  <div class="progress-header">
+    <h4 class="progress-title" id="progress-{{ widget_config.id }}-title">
+      {{ widget_config.title|default:'Progress' }}
+    </h4>
+    <span class="progress-percentage" aria-live="polite">
+      {{ widget_config.percentage|default:0 }}%
+    </span>
+  </div>
+  
+  <div class="progress mb-3" 
+       role="progressbar" 
+       aria-valuenow="{{ widget_config.percentage|default:0 }}" 
+       aria-valuemin="0" 
+       aria-valuemax="100"
+       aria-labelledby="progress-{{ widget_config.id }}-title">
+    <div class="progress-bar bg-{{ widget_config.variant|default:'primary' }}" 
+         style="width: {{ widget_config.percentage|default:0 }}%"
+         data-animate="true">
+    </div>
+  </div>
+  
+  {% if widget_config.subtitle %}
+  <p class="progress-subtitle text-muted">{{ widget_config.subtitle }}</p>
+  {% endif %}
+  
+  {% if widget_config.milestones %}
+  <div class="progress-milestones">
+    {% for milestone in widget_config.milestones %}
+    <div class="milestone {{ milestone.status|default:'pending' }}" 
+         style="left: {{ milestone.percentage }}%"
+         title="{{ milestone.label }}">
+      <i class="fas fa-{{ milestone.icon|default:'circle' }}" aria-hidden="true"></i>
+      <span class="milestone-label">{{ milestone.label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% elif widget_type == 'alert_card' %}
+<!-- Alert Card Widget -->
+<div class="alert alert-{{ widget_config.variant|default:'info' }} alert-dismissible {{ widget_config.class|default:'' }}" 
+     role="alert" 
+     aria-labelledby="alert-{{ widget_config.id }}-title">
+  
+  <div class="alert-icon">
+    <i class="fas fa-{{ widget_config.icon|default:'info-circle' }}" aria-hidden="true"></i>
+  </div>
+  
+  <div class="alert-content">
+    <h5 class="alert-heading" id="alert-{{ widget_config.id }}-title">
+      {{ widget_config.title|default:'Alert' }}
+    </h5>
+    
+    {% if widget_config.message %}
+    <p class="alert-message">{{ widget_config.message }}</p>
+    {% endif %}
+    
+    {% if widget_config.actions %}
+    <div class="alert-actions">
+      {% for action in widget_config.actions %}
+      <a href="{{ action.url }}" 
+         class="btn btn-{{ widget_config.variant|default:'info' }} btn-sm">
+        {{ action.label }}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  
+  {% if widget_config.dismissible %}
+  <button type="button" 
+          class="btn-close" 
+          data-bs-dismiss="alert" 
+          aria-label="Close alert"></button>
+  {% endif %}
+</div>
+
+{% elif widget_type == 'stat_grid' %}
+<!-- Statistics Grid Widget -->
+<div class="stat-grid {{ widget_config.class|default:'' }}" 
+     role="region" 
+     aria-labelledby="stat-grid-{{ widget_config.id }}-title">
+  
+  {% if widget_config.title %}
+  <h3 class="stat-grid-title" id="stat-grid-{{ widget_config.id }}-title">
+    {{ widget_config.title }}
+  </h3>
+  {% endif %}
+  
+  <div class="stat-grid-container">
+    {% for stat in widget_config.stats %}
+    <div class="stat-item {{ stat.variant|default:'primary' }}" 
+         role="region" 
+         aria-label="{{ stat.label }}: {{ stat.value }}">
+      
+      <div class="stat-icon">
+        <i class="fas fa-{{ stat.icon|default:'chart-bar' }}" aria-hidden="true"></i>
+      </div>
+      
+      <div class="stat-content">
+        <div class="stat-value" aria-live="polite">{{ stat.value }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+        
+        {% if stat.change %}
+        <div class="stat-change {{ stat.change.direction|default:'neutral' }}">
+          {% if stat.change.direction == 'up' %}
+            <i class="fas fa-arrow-up" aria-hidden="true"></i>
+          {% elif stat.change.direction == 'down' %}
+            <i class="fas fa-arrow-down" aria-hidden="true"></i>
+          {% else %}
+            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+          {% endif %}
+          {{ stat.change.value }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endif %}
+
+<!-- Widget-specific JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize progress bar animations
+    document.querySelectorAll('.progress-bar[data-animate="true"]').forEach(function(bar) {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(function() {
+            bar.style.transition = 'width 2s ease-in-out';
+            bar.style.width = width;
+        }, 500);
+    });
+    
+    // Period selector functionality
+    document.querySelectorAll('.period-selector button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            // Remove active from siblings
+            this.parentElement.querySelectorAll('button').forEach(function(sibling) {
+                sibling.classList.remove('active');
+            });
+            
+            // Add active to clicked button
+            this.classList.add('active');
+            
+            // Trigger chart update (if applicable)
+            const period = this.dataset.period;
+            const chartCard = this.closest('.chart-card');
+            const canvasId = chartCard.querySelector('canvas').id;
+            
+            // Emit custom event for chart updates
+            document.dispatchEvent(new CustomEvent('chartPeriodChange', {
+                detail: { canvasId: canvasId, period: period }
+            }));
+        });
+    });
+});
+
+// Fullscreen chart functionality
+function toggleChartFullscreen(chartId) {
+    const chartCard = document.querySelector(`[role="img"][aria-labelledby="chart-${chartId}-title"]`);
+    
+    if (chartCard) {
+        if (chartCard.classList.contains('fullscreen')) {
+            chartCard.classList.remove('fullscreen');
+            document.body.classList.remove('chart-fullscreen');
+        } else {
+            chartCard.classList.add('fullscreen');
+            document.body.classList.add('chart-fullscreen');
+        }
+        
+        // Trigger chart resize
+        setTimeout(function() {
+            if (window.grocifyCharts) {
+                window.grocifyCharts.resizeCharts();
+            }
+        }, 300);
+    }
+}
+
+// Close fullscreen on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.chart-card.fullscreen').forEach(function(card) {
+            card.classList.remove('fullscreen');
+        });
+        document.body.classList.remove('chart-fullscreen');
+    }
+});
+</script>

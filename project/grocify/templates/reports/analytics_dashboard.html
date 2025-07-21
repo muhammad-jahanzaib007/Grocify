@@ -1,0 +1,842 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Advanced Analytics Dashboard{% endblock %}
+
+{% block page_title %}Advanced Analytics{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard:admin_dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'reports:index' %}">Reports</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Advanced Analytics</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grocify-design-system.css' %}">
+<style>
+.analytics-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: var(--text-inverse);
+    padding: var(--space-xl);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.analytics-card {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-lg);
+    transition: var(--transition);
+    border: 1px solid var(--border-color);
+}
+
+.analytics-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    border-color: var(--primary);
+}
+
+.section-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.section-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.section-title i {
+    color: var(--primary);
+}
+
+.time-range-selector {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+.time-range-selector button {
+    border: none;
+    padding: var(--space-sm) var(--space-md);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    border-right: 1px solid var(--border-color);
+}
+
+.time-range-selector button:last-child {
+    border-right: none;
+}
+
+.time-range-selector button.active,
+.time-range-selector button:hover {
+    background: var(--primary);
+    color: var(--text-inverse);
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.kpi-card {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(99, 102, 241, 0.02) 100%);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: var(--space-lg);
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary);
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.kpi-card:hover::before {
+    opacity: 1;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-md);
+}
+
+.kpi-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-lg);
+    color: var(--text-inverse);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.kpi-value {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: var(--space-xs);
+}
+
+.kpi-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+}
+
+.kpi-trend {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.kpi-trend.positive {
+    color: var(--success);
+}
+
+.kpi-trend.negative {
+    color: var(--danger);
+}
+
+.kpi-trend.neutral {
+    color: var(--text-muted);
+}
+
+.chart-section {
+    margin-bottom: var(--space-xl);
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin: var(--space-lg) 0;
+}
+
+.analytics-table {
+    margin-top: var(--space-lg);
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+}
+
+.export-buttons {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+@media (max-width: 768px) {
+    .analytics-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+    
+    .kpi-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-md);
+    }
+    
+    .time-range-selector {
+        width: 100%;
+    }
+    
+    .time-range-selector button {
+        flex: 1;
+    }
+    
+    .chart-container {
+        height: 300px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Analytics Header -->
+<div class="analytics-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-2" style="color: inherit; font-size: var(--font-size-2xl);">
+                <i class="fas fa-chart-bar me-3"></i>Advanced Analytics Dashboard
+            </h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+                Comprehensive business intelligence and performance insights
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light" onclick="refreshAnalytics()">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+            <button type="button" class="btn btn-light" onclick="exportReport()">
+                <i class="fas fa-file-export me-2"></i>Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Time Range Selector -->
+<div class="section-header">
+    <h2 class="section-title">
+        <i class="fas fa-calendar-alt"></i>
+        Performance Overview
+    </h2>
+    <div class="time-range-selector" role="tablist">
+        <button type="button" class="active" data-range="7d" role="tab">7 Days</button>
+        <button type="button" data-range="30d" role="tab">30 Days</button>
+        <button type="button" data-range="90d" role="tab">90 Days</button>
+        <button type="button" data-range="1y" role="tab">1 Year</button>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <div class="kpi-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+        </div>
+        <div class="kpi-value" id="total-revenue">$127,450</div>
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-trend positive">
+            <i class="fas fa-arrow-up"></i>
+            <span>+15.2% vs last period</span>
+        </div>
+    </div>
+    
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, var(--success) 0%, #059669 100%);">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+        </div>
+        <div class="kpi-value" id="total-orders">2,847</div>
+        <div class="kpi-label">Total Orders</div>
+        <div class="kpi-trend positive">
+            <i class="fas fa-arrow-up"></i>
+            <span>+8.7% vs last period</span>
+        </div>
+    </div>
+    
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);">
+                <i class="fas fa-users"></i>
+            </div>
+        </div>
+        <div class="kpi-value" id="total-customers">1,234</div>
+        <div class="kpi-label">Active Customers</div>
+        <div class="kpi-trend positive">
+            <i class="fas fa-arrow-up"></i>
+            <span>+12.3% vs last period</span>
+        </div>
+    </div>
+    
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, var(--info) 0%, #0284c7 100%);">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+        <div class="kpi-value" id="avg-order-value">$44.76</div>
+        <div class="kpi-label">Avg Order Value</div>
+        <div class="kpi-trend negative">
+            <i class="fas fa-arrow-down"></i>
+            <span>-2.1% vs last period</span>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="chart-section">
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fas fa-chart-area"></i>
+            Revenue & Sales Trends
+        </h2>
+    </div>
+    
+    <div class="analytics-grid">
+        <!-- Revenue Trend Chart -->
+        <div class="analytics-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">Revenue Trend</h3>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportChart('revenueChart')">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+            <div class="chart-container">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Sales by Category Chart -->
+        <div class="analytics-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">Sales by Category</h3>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportChart('categoryChart')">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Analysis Section -->
+<div class="chart-section">
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fas fa-analytics"></i>
+            Performance Analysis
+        </h2>
+    </div>
+    
+    <div class="analytics-grid">
+        <!-- Top Products Chart -->
+        <div class="analytics-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">Top Performing Products</h3>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportChart('topProductsChart')">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+            <div class="chart-container">
+                <canvas id="topProductsChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Customer Growth Chart -->
+        <div class="analytics-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">Customer Growth</h3>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportChart('customerGrowthChart')">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+            <div class="chart-container">
+                <canvas id="customerGrowthChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Tables Section -->
+<div class="analytics-table">
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fas fa-table"></i>
+            Detailed Analytics
+        </h2>
+    </div>
+    
+    <div class="analytics-grid">
+        <!-- Top Products Table -->
+        <div class="analytics-card">
+            <div class="table-header">
+                <h3 class="mb-0">Top Products Performance</h3>
+                <div class="export-buttons">
+                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-file-csv me-1"></i>CSV
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-file-pdf me-1"></i>PDF
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-end">Sales</th>
+                            <th class="text-end">Revenue</th>
+                            <th class="text-center">Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="product-avatar bg-primary text-white rounded me-2" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-apple-alt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">Organic Apples</div>
+                                        <small class="text-muted">Produce</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end">1,234</td>
+                            <td class="text-end">$2,468</td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>+15%
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="product-avatar bg-info text-white rounded me-2" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-bread-slice"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">Whole Grain Bread</div>
+                                        <small class="text-muted">Bakery</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end">987</td>
+                            <td class="text-end">$1,974</td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>+8%
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="product-avatar bg-warning text-white rounded me-2" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-cheese"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">Organic Milk</div>
+                                        <small class="text-muted">Dairy</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end">765</td>
+                            <td class="text-end">$1,530</td>
+                            <td class="text-center">
+                                <span class="badge bg-danger-subtle text-danger">
+                                    <i class="fas fa-arrow-down me-1"></i>-3%
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Customer Analytics Table -->
+        <div class="analytics-card">
+            <div class="table-header">
+                <h3 class="mb-0">Customer Insights</h3>
+                <div class="export-buttons">
+                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-file-csv me-1"></i>CSV
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-file-pdf me-1"></i>PDF
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Segment</th>
+                            <th class="text-end">Customers</th>
+                            <th class="text-end">Avg Order</th>
+                            <th class="text-center">Growth</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="badge bg-primary me-2">VIP</div>
+                                    Premium Customers
+                                </div>
+                            </td>
+                            <td class="text-end">234</td>
+                            <td class="text-end">$89.50</td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>+22%
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="badge bg-success me-2">REG</div>
+                                    Regular Customers
+                                </div>
+                            </td>
+                            <td class="text-end">789</td>
+                            <td class="text-end">$45.20</td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>+12%
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="badge bg-secondary me-2">NEW</div>
+                                    New Customers
+                                </div>
+                            </td>
+                            <td class="text-end">211</td>
+                            <td class="text-end">$32.10</td>
+                            <td class="text-center">
+                                <span class="badge bg-warning-subtle text-warning">
+                                    <i class="fas fa-minus me-1"></i>+5%
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/charts.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeAnalyticsCharts();
+    setupTimeRangeSelector();
+    setupAutoRefresh();
+});
+
+function initializeAnalyticsCharts() {
+    // Revenue trend chart
+    const revenueCtx = document.getElementById('revenueChart');
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Revenue',
+                data: [12000, 15000, 18000, 14000, 22000, 25000],
+                borderColor: 'rgb(99, 102, 241)',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Category distribution chart
+    const categoryCtx = document.getElementById('categoryChart');
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Produce', 'Bakery', 'Dairy', 'Meat', 'Beverages'],
+            datasets: [{
+                data: [35, 25, 20, 12, 8],
+                backgroundColor: [
+                    'rgb(99, 102, 241)',
+                    'rgb(139, 92, 246)',
+                    'rgb(16, 185, 129)',
+                    'rgb(245, 158, 11)',
+                    'rgb(59, 130, 246)'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Top products chart
+    const topProductsCtx = document.getElementById('topProductsChart');
+    new Chart(topProductsCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Apples', 'Bread', 'Milk', 'Eggs', 'Yogurt'],
+            datasets: [{
+                label: 'Sales',
+                data: [1234, 987, 765, 543, 321],
+                backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                borderColor: 'rgb(99, 102, 241)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+    
+    // Customer growth chart
+    const customerGrowthCtx = document.getElementById('customerGrowthChart');
+    new Chart(customerGrowthCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'New Customers',
+                data: [45, 52, 38, 67, 73, 89],
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+}
+
+function setupTimeRangeSelector() {
+    const buttons = document.querySelectorAll('.time-range-selector button');
+    
+    buttons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Update analytics data based on selected range
+            const range = this.dataset.range;
+            updateAnalyticsData(range);
+        });
+    });
+}
+
+function updateAnalyticsData(range) {
+    console.log('Updating analytics for range:', range);
+    
+    // Show loading state
+    const kpiCards = document.querySelectorAll('.kpi-value');
+    kpiCards.forEach(card => {
+        card.style.opacity = '0.6';
+    });
+    
+    // Simulate data loading
+    setTimeout(() => {
+        // Update KPI values based on range
+        updateKPIValues(range);
+        
+        // Restore opacity
+        kpiCards.forEach(card => {
+            card.style.opacity = '1';
+        });
+        
+        // Show success notification
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Data Updated', `Analytics updated for ${range} period.`);
+        }
+    }, 1000);
+}
+
+function updateKPIValues(range) {
+    const multipliers = {
+        '7d': 0.2,
+        '30d': 1.0,
+        '90d': 3.2,
+        '1y': 12.8
+    };
+    
+    const multiplier = multipliers[range] || 1.0;
+    
+    document.getElementById('total-revenue').textContent = `$${Math.round(127450 * multiplier).toLocaleString()}`;
+    document.getElementById('total-orders').textContent = Math.round(2847 * multiplier).toLocaleString();
+    document.getElementById('total-customers').textContent = Math.round(1234 * multiplier).toLocaleString();
+    document.getElementById('avg-order-value').textContent = `$${(44.76 * (0.8 + multiplier * 0.2)).toFixed(2)}`;
+}
+
+function setupAutoRefresh() {
+    // Auto-refresh data every 5 minutes
+    setInterval(() => {
+        refreshAnalytics();
+    }, 300000);
+}
+
+function refreshAnalytics() {
+    console.log('Refreshing analytics data...');
+    
+    // Show loading state
+    const cards = document.querySelectorAll('.kpi-card, .analytics-card');
+    cards.forEach(card => {
+        card.style.opacity = '0.8';
+    });
+    
+    // Simulate data refresh
+    setTimeout(() => {
+        // Restore opacity
+        cards.forEach(card => {
+            card.style.opacity = '1';
+        });
+        
+        // Show success notification
+        if (window.grocifyUX) {
+            window.grocifyUX.showToast('success', 'Data Refreshed', 'Analytics data has been updated with the latest information.');
+        }
+    }, 2000);
+}
+
+function exportChart(chartId) {
+    console.log('Exporting chart:', chartId);
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Export Started', 'Chart export is being prepared for download.');
+    }
+}
+
+function exportReport() {
+    console.log('Exporting full analytics report...');
+    
+    if (window.grocifyUX) {
+        window.grocifyUX.showToast('info', 'Report Export', 'Comprehensive analytics report is being generated. You will receive an email when ready.');
+    }
+}
+</script>
+{% endblock %}

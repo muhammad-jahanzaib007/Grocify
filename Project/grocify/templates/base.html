@@ -1,121 +1,1064 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <title>{% block title %}Grocify{% endblock %}</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap"
-    rel="stylesheet"
-  />
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-    crossorigin="anonymous"
-  />
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/pos.css' %}" />
-  {% block extra_css %}{% endblock %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}Grocify - Grocery Management System{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Grocify Design System -->
+    <link rel="stylesheet" href="{% static 'css/grocify-design-system.css' %}">
+    
+    <!-- Template-specific overrides -->
+    <style>
+        /* Navigation sections */
+        .nav-section {
+            margin-bottom: var(--space-xl);
+        }
 
-  <link rel="stylesheet" href="{% static 'css/layout.css' %}" />
+        .nav-section-title {
+            padding: 0 var(--space-lg) var(--space-sm);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        /* Search functionality */
+        .search-container {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: var(--space-sm) var(--space-md) var(--space-sm) 45px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            background: var(--bg-primary);
+            transition: var(--transition-fast);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: var(--z-dropdown);
+            display: none;
+        }
+
+        .search-result-item {
+            padding: var(--space-md);
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition-fast);
+        }
+
+        .search-result-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-item.search-highlighted {
+            background: var(--primary);
+            color: var(--text-inverse);
+        }
+
+        /* Store selector */
+        .store-selector {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--space-sm) var(--space-md);
+            font-size: var(--font-size-sm);
+            min-width: 150px;
+        }
+
+        /* Header buttons */
+        .header-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-fast);
+            position: relative;
+        }
+
+        .header-btn:hover {
+            background: var(--primary);
+            color: var(--text-inverse);
+        }
+
+        /* Breadcrumbs */
+        .breadcrumb-container {
+            padding: var(--space-md) var(--space-xl);
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: var(--font-size-sm);
+            color: var(--text-muted);
+        }
+
+        .breadcrumb-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .breadcrumb-item a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item a:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb-separator {
+            color: var(--text-muted);
+        }
+
+        /* Keyboard shortcuts helper */
+        .keyboard-shortcut {
+            position: fixed;
+            bottom: var(--space-lg);
+            left: var(--space-lg);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: var(--space-md);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-xs);
+            z-index: var(--z-tooltip);
+            display: none;
+        }
+
+        .keyboard-shortcut.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Custom tooltips */
+        .tooltip-custom {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip-custom::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-xs);
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition-fast);
+            z-index: var(--z-tooltip);
+        }
+
+        .tooltip-custom:hover::before {
+            opacity: 1;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            .search-container {
+                width: 200px;
+            }
+            
+            .grocify-sidebar.show {
+                transform: translateX(0);
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
-  <nav class="sidebar">
-    <a href="{% url 'sales:index' %}" title="Sales">🛒</a>
-    <a href="{% url 'purchases:index' %}" title="Purchases">🛍️</a>
-    <a href="{% url 'inventory:stock_dashboard' %}" title="Inventory">📦</a>
-    <a href="{% url 'customers:index' %}" title="Customers">👥</a>
-    <a href="{% url 'loyalty:index' %}" title="Loyalty">⭐</a>
-    <a href="{% url 'expenses:index' %}" title="Expenses">💸</a>
-    <a href="{% url 'reports:index' %}" title="Analytics">📈</a>
-    <a href="{% url 'sales:chain_dashboard' %}" title="Chain View">🌐</a>
-  </nav>
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a href="#sidebar" class="skip-link">Skip to navigation</a>
+    
+    <!-- Sidebar -->
+    <nav class="grocify-sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+        <div class="sidebar-header">
+            <a href="{% url 'dashboard:admin_dashboard' %}" class="sidebar-logo" aria-label="Go to Dashboard - Grocify Home">
+                <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+                <span class="sidebar-logo-text">Grocify</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-nav" role="menu">
+            <!-- Main -->
+            <div class="nav-section" role="group" aria-labelledby="nav-main">
+                <div class="nav-section-title" id="nav-main" role="heading" aria-level="2">Main</div>
+                <a href="{% url 'dashboard:admin_dashboard' %}" class="nav-item" role="menuitem" aria-label="Go to Dashboard - View analytics and overview">
+                    <i class="fas fa-chart-bar" aria-hidden="true"></i>
+                    <span class="nav-item-text">Dashboard</span>
+                </a>
+                <a href="{% url 'sales:index' %}" class="nav-item" role="menuitem" aria-label="Go to POS System - Process sales and transactions">
+                    <i class="fas fa-cash-register" aria-hidden="true"></i>
+                    <span class="nav-item-text">POS System</span>
+                </a>
+            </div>
 
-  <header class="header-bar">
-    <button class="btn btn-sm btn-light me-3 d-md-none" id="sidebarToggle">☰</button>
-    <div>{% block header %}Welcome to Grocify{% endblock %}</div>
-    <div class="receipt-id" id="receipt-id"></div>
+            <!-- Inventory & Sales -->
+            <div class="nav-section" role="group" aria-labelledby="nav-inventory">
+                <div class="nav-section-title" id="nav-inventory" role="heading" aria-level="2">Inventory</div>
+                <a href="{% url 'inventory:stock_dashboard' %}" class="nav-item" role="menuitem" aria-label="Go to Inventory - Manage stock and products">
+                    <i class="fas fa-boxes" aria-hidden="true"></i>
+                    <span class="nav-item-text">Inventory</span>
+                </a>
+                <a href="{% url 'purchases:index' %}" class="nav-item" role="menuitem" aria-label="Go to Purchases - Manage purchase orders and suppliers">
+                    <i class="fas fa-truck" aria-hidden="true"></i>
+                    <span class="nav-item-text">Purchases</span>
+                </a>
+                <a href="#" class="nav-item" role="menuitem" aria-label="Go to Sales Reports - View sales analytics and reports" aria-disabled="true">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    <span class="nav-item-text">Sales Reports</span>
+                </a>
+            </div>
 
+            <!-- Customers & Loyalty -->
+            <div class="nav-section" role="group" aria-labelledby="nav-customers">
+                <div class="nav-section-title" id="nav-customers" role="heading" aria-level="2">Customers</div>
+                <a href="{% url 'customers:index' %}" class="nav-item" role="menuitem" aria-label="Go to Customers - Manage customer information and profiles">
+                    <i class="fas fa-users" aria-hidden="true"></i>
+                    <span class="nav-item-text">Customers</span>
+                </a>
+                <a href="{% url 'loyalty:index' %}" class="nav-item" role="menuitem" aria-label="Go to Loyalty Program - Manage customer rewards and points">
+                    <i class="fas fa-star" aria-hidden="true"></i>
+                    <span class="nav-item-text">Loyalty Program</span>
+                </a>
+                <a href="{% url 'credit:index' %}" class="nav-item" role="menuitem" aria-label="Go to Credit Sales - Manage credit transactions and payments">
+                    <i class="fas fa-credit-card" aria-hidden="true"></i>
+                    <span class="nav-item-text">Credit Sales</span>
+                </a>
+            </div>
 
-    <div class="d-flex align-items-center ms-auto">
-      <label for="location-switcher" class="text-white mb-0 me-2">Store:</label>
-      <select id="location-switcher" class="form-select form-select-sm w-auto">
-        <option value="all" {% if selected_location_id == "all" %}selected{% endif %}>
-          All Stores
-        </option>
-        {% for loc in available_locations %}
-          <option value="{{ loc.id }}"
-            {% if selected_location_id == loc.id|stringformat:"s" %}selected{% endif %}>
-            {{ loc.name }}
-          </option>
-        {% endfor %}
-      </select>
-      <button class="btn btn-sm btn-light ms-3" id="themeToggle">🌙</button>
+            <!-- Reports & Analytics -->
+            <div class="nav-section">
+                <div class="nav-section-title">Analytics</div>
+                <a href="{% url 'reports:index' %}" class="nav-item">
+                    <i class="fas fa-chart-pie"></i>
+                    <span class="nav-text">Reports</span>
+                </a>
+                <a href="{% url 'expenses:index' %}" class="nav-item">
+                    <i class="fas fa-receipt"></i>
+                    <span class="nav-text">Expenses</span>
+                </a>
+            </div>
+
+            <!-- System -->
+            <div class="nav-section">
+                <div class="nav-section-title">System</div>
+                <a href="{% url 'users:index' %}" class="nav-item">
+                    <i class="fas fa-user-cog"></i>
+                    <span class="nav-text">Users</span>
+                </a>
+                <a href="{% url 'settings:index' %}" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span class="nav-text">Settings</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Logout -->
+        <div style="position: absolute; bottom: 20px; left: 0; right: 0; padding: 0 10px;">
+            <form method="post" action="{% url 'users:logout' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="nav-item w-100 border-0 bg-transparent text-start" style="color: var(--sidebar-text);">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="nav-item-text">Logout</span>
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="grocify-main" id="mainContent">
+        <!-- Header -->
+        <header class="grocify-header" role="banner">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="sidebar">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </button>
+                <div>
+                    <h1 class="page-title" id="page-title" aria-live="polite">{% block page_title %}Dashboard{% endblock %}</h1>
+                    {% if current_location %}
+                        <small class="text-muted" style="font-size: 12px;" aria-label="Current location">
+                            <i class="fas fa-map-marker-alt me-1" aria-hidden="true"></i>{{ current_location.name }}
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <!-- Global Search -->
+                <div class="search-container" role="search">
+                    <label for="globalSearch" class="visually-hidden">Search products, customers, and orders</label>
+                    <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                    <input type="text" class="search-input" id="globalSearch" placeholder="Search products, customers, orders..." autocomplete="off" aria-describedby="search-help" aria-expanded="false" aria-owns="searchResults">
+                    <div class="search-results" id="searchResults" role="listbox" aria-live="polite" aria-label="Search results"></div>
+                    <div id="search-help" class="visually-hidden">Type to search across products, customers, and orders. Use arrow keys to navigate results.</div>
+                </div>
+                
+                <!-- Store Selector -->
+                <label for="storeSelector" class="visually-hidden">Select store location</label>
+                <select class="store-selector" id="storeSelector" aria-label="Switch between store locations" aria-describedby="store-help">
+                    <option value="">Select Store...</option>
+                    <!-- Static options for debugging -->
+                    <option value="1"{% if current_location_id == '1' or current_location_id == 1 %} selected{% endif %}>DHA, BAHAWALPUR</option>
+                    <option value="2"{% if current_location_id == '2' or current_location_id == 2 %} selected{% endif %}>Noor Mehal branch</option>
+                </select>
+                <div id="store-help" class="visually-hidden">Changing the store will refresh the page to update context</div>
+                
+                <!-- Dark Mode Toggle -->
+                <button class="header-btn" id="themeToggle" aria-label="Toggle dark mode theme" aria-pressed="false" title="Toggle Dark Mode (Ctrl+D)">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                </button>
+                
+                <!-- Notifications -->
+                <button class="header-btn" id="notificationsBtn" aria-label="View notifications" aria-describedby="notification-count" title="Notifications">
+                    <i class="fas fa-bell" aria-hidden="true"></i>
+                    <span class="badge bg-danger" id="notification-count" style="position: absolute; top: 5px; right: 5px; font-size: 10px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;" aria-label="3 unread notifications">3</span>
+                </button>
+                
+                <!-- User Profile -->
+                <button class="header-btn" aria-label="Open user profile menu" title="User Profile" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-user" aria-hidden="true"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Breadcrumbs -->
+        {% block breadcrumbs %}
+        <div class="breadcrumb-container">
+            <nav class="breadcrumb">
+                <div class="breadcrumb-item">
+                    <a href="{% url 'dashboard:admin_dashboard' %}">
+                        <i class="fas fa-home"></i>
+                        Dashboard
+                    </a>
+                </div>
+                <span class="breadcrumb-separator">
+                    <i class="fas fa-chevron-right"></i>
+                </span>
+                <div class="breadcrumb-item">
+                    {% block current_page %}Current Page{% endblock %}
+                </div>
+            </nav>
+        </div>
+        {% endblock %}
+
+        <!-- Content -->
+        <main class="grocify-content" id="main-content" role="main" aria-labelledby="page-title">
+                {% block content %}
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Welcome to Grocify</h5>
+                                <p class="card-text">Your grocery management system dashboard.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endblock %}
+        </main>
     </div>
-  </header>
 
-  <main class="main-content">
-    {% block breadcrumbs %}{% endblock %}
-    {% block page_title %}<h1>{{ page_title }}</h1>{% endblock %}
-    {% if messages %}
-      <div class="alert-container">
-        {% for msg in messages %}
-          <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
-    {% block content %}{% endblock %}
-  </main>
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner"></div>
+    </div>
 
-  <script>
-    document.getElementById('location-switcher')?.addEventListener('change', function() {
-      fetch("{% url 'sales:set_location' %}", {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': '{{ csrf_token }}',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ location_id: this.value })
-      })
-      .then(() => window.location.reload())
-      .catch(console.error);
-    });
-  </script>
-  <script>
-    document.getElementById('sidebarToggle')?.addEventListener('click', function() {
-      document.querySelector('.sidebar')?.classList.toggle('collapsed');
-    });
-  </script>
-  <script>
-    (function() {
-      const toggle = document.getElementById('themeToggle');
-      const root = document.documentElement;
-      const current = localStorage.getItem('theme');
-      if (current === 'dark') root.classList.add('dark-mode');
-      if (toggle) {
-        toggle.textContent = root.classList.contains('dark-mode') ? '☀️' : '🌙';
-        toggle.addEventListener('click', function() {
-          if (root.classList.contains('dark-mode')) {
-            root.classList.remove('dark-mode');
-            localStorage.setItem('theme','light');
-            this.textContent = '🌙';
-          } else {
-            root.classList.add('dark-mode');
-            localStorage.setItem('theme','dark');
-            this.textContent = '☀️';
-          }
+    <!-- Keyboard Shortcut Helper -->
+    <div class="keyboard-shortcut" id="shortcutHelper">
+        Press <strong>?</strong> for keyboard shortcuts
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JS -->
+    <script>
+        // Enhanced UX Functionality
+        class GrocifyUX {
+            constructor() {
+                this.init();
+                this.setupEventListeners();
+                this.setupKeyboardShortcuts();
+                this.showWelcomeMessage();
+            }
+
+            init() {
+                this.restoreSidebarState();
+                this.restoreTheme();
+                this.loadStores();
+                this.highlightActiveNav();
+                this.setupSearch();
+                this.showKeyboardHelper();
+            }
+
+            // Sidebar functionality
+            restoreSidebarState() {
+                const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (sidebarCollapsed) {
+                    document.getElementById('sidebar').classList.add('collapsed');
+                }
+            }
+
+            toggleSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const body = document.body;
+                const toggleButton = document.getElementById('sidebarToggle');
+                const overlay = this.getOrCreateOverlay();
+                
+                // Enhanced mobile sidebar handling
+                const isMobile = window.innerWidth <= 992;
+                
+                if (isMobile) {
+                    // Mobile: Toggle show class and overlay
+                    const isOpen = sidebar.classList.contains('show');
+                    
+                    if (isOpen) {
+                        sidebar.classList.remove('show');
+                        overlay.classList.remove('show');
+                        body.classList.remove('sidebar-open');
+                        body.style.overflow = '';
+                        toggleButton.setAttribute('aria-expanded', 'false');
+                        toggleButton.setAttribute('aria-label', 'Open navigation menu');
+                    } else {
+                        sidebar.classList.add('show');
+                        overlay.classList.add('show');
+                        body.classList.add('sidebar-open');
+                        body.style.overflow = 'hidden'; // Prevent background scroll
+                        toggleButton.setAttribute('aria-expanded', 'true');
+                        toggleButton.setAttribute('aria-label', 'Close navigation menu');
+                        
+                        // Focus first nav item for accessibility
+                        setTimeout(() => {
+                            const firstNavItem = sidebar.querySelector('.nav-item');
+                            if (firstNavItem) firstNavItem.focus();
+                        }, 300);
+                    }
+                } else {
+                    // Desktop: Toggle collapsed state
+                    const mainContent = document.getElementById('mainContent');
+                    sidebar.classList.toggle('collapsed');
+                    if (mainContent) mainContent.classList.toggle('sidebar-collapsed');
+                    
+                    const isCollapsed = sidebar.classList.contains('collapsed');
+                    toggleButton.setAttribute('aria-expanded', !isCollapsed);
+                    toggleButton.setAttribute('aria-label', isCollapsed ? 'Expand navigation menu' : 'Collapse navigation menu');
+                    localStorage.setItem('sidebarCollapsed', isCollapsed);
+                }
+            }
+            
+            getOrCreateOverlay() {
+                let overlay = document.querySelector('.sidebar-overlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.className = 'sidebar-overlay';
+                    overlay.setAttribute('aria-hidden', 'true');
+                    overlay.addEventListener('click', () => this.closeMobileSidebar());
+                    document.body.appendChild(overlay);
+                }
+                return overlay;
+            }
+            
+            closeMobileSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.querySelector('.sidebar-overlay');
+                const body = document.body;
+                const toggleButton = document.getElementById('sidebarToggle');
+                
+                if (sidebar.classList.contains('show')) {
+                    sidebar.classList.remove('show');
+                    if (overlay) overlay.classList.remove('show');
+                    body.classList.remove('sidebar-open');
+                    body.style.overflow = '';
+                    toggleButton.setAttribute('aria-expanded', 'false');
+                    toggleButton.setAttribute('aria-label', 'Open navigation menu');
+                    toggleButton.focus(); // Return focus to toggle button
+                }
+            }
+
+            // Theme functionality
+            restoreTheme() {
+                const theme = localStorage.getItem('theme') || 'light';
+                document.documentElement.className = theme === 'dark' ? 'dark-mode' : '';
+                this.updateThemeIcon(theme);
+            }
+
+            toggleTheme() {
+                const isDark = document.documentElement.classList.contains('dark-mode');
+                const newTheme = isDark ? 'light' : 'dark';
+                
+                document.documentElement.className = newTheme === 'dark' ? 'dark-mode' : '';
+                localStorage.setItem('theme', newTheme);
+                this.updateThemeIcon(newTheme);
+                
+                const themeButton = document.getElementById('themeToggle');
+                themeButton.setAttribute('aria-pressed', newTheme === 'dark');
+                themeButton.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} mode theme`);
+                
+                this.showToast('success', 'Theme changed', `Switched to ${newTheme} mode`);
+            }
+
+            updateThemeIcon(theme) {
+                const icon = document.querySelector('#themeToggle i');
+                const themeButton = document.getElementById('themeToggle');
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+                themeButton.setAttribute('aria-pressed', theme === 'dark');
+                themeButton.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode theme`);
+            }
+
+            // Store functionality  
+            loadStores() {
+                const storeSelector = document.getElementById('storeSelector');
+                
+                // Set current store from server context or localStorage
+                const currentLocationId = '{{ current_location_id|default:"" }}';
+                const selectedStore = currentLocationId || localStorage.getItem('selectedStore');
+                
+                // Initialize store selector with current location
+                
+                if (selectedStore) {
+                    storeSelector.value = selectedStore;
+                    localStorage.setItem('selectedStore', selectedStore);
+                    // Store selector initialized
+                }
+            }
+
+            changeStore(storeId) {
+                if (!storeId) return;
+                
+                // Get store name before making API call
+                const storeSelector = document.getElementById('storeSelector');
+                const storeName = storeSelector.options[storeSelector.selectedIndex].text;
+                
+                // Show loading
+                this.showLoading();
+                
+                // Make API call to switch store in backend
+                fetch('/api/switch-store/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCSRFToken(),
+                    },
+                    body: JSON.stringify({
+                        store_id: storeId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    this.hideLoading();
+                    
+                    if (data.success) {
+                        // Update localStorage
+                        localStorage.setItem('selectedStore', storeId);
+                        
+                        // Show success notification
+                        this.showToast('success', 'Store switched', data.message);
+                        
+                        // Reload page to reflect new store context
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        console.error('Store switch failed:', data.message);
+                        this.showToast('error', 'Error switching store', data.message || 'Failed to switch store');
+                        
+                        // Reset selector to previous value
+                        const previousStore = localStorage.getItem('selectedStore');
+                        if (previousStore) {
+                            storeSelector.value = previousStore;
+                        }
+                    }
+                })
+                .catch(error => {
+                    this.hideLoading();
+                    console.error('Store switch API error:', error);
+                    this.showToast('error', 'Error', 'Failed to switch store. Please try again.');
+                    
+                    // Reset selector to previous value
+                    const previousStore = localStorage.getItem('selectedStore');
+                    if (previousStore) {
+                        storeSelector.value = previousStore;
+                    }
+                });
+            }
+
+            getCSRFToken() {
+                // First try to get from meta tag
+                const metaToken = document.querySelector('meta[name="csrf-token"]');
+                if (metaToken) {
+                    return metaToken.getAttribute('content');
+                }
+                
+                // Then try to get from form input
+                const formToken = document.querySelector('input[name="csrfmiddlewaretoken"]');
+                if (formToken) {
+                    return formToken.value;
+                }
+                
+                // Finally try cookies
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'csrftoken') {
+                        return value;
+                    }
+                }
+                
+                console.warn('CSRF token not found');
+                return '';
+            }
+
+            // Search functionality
+            setupSearch() {
+                const searchInput = document.getElementById('globalSearch');
+                const searchResults = document.getElementById('searchResults');
+                let searchTimeout;
+
+                searchInput.addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    const query = e.target.value.trim();
+
+                    if (query.length < 2) {
+                        searchResults.style.display = 'none';
+                        return;
+                    }
+
+                    searchTimeout = setTimeout(() => {
+                        this.performSearch(query);
+                    }, 300);
+                });
+
+                searchInput.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        searchResults.style.display = 'none';
+                    }, 200);
+                });
+            }
+
+            performSearch(query) {
+                const searchResults = document.getElementById('searchResults');
+                
+                // Mock search results
+                const mockResults = [
+                    {type: 'product', name: `Product: ${query}`, url: '#'},
+                    {type: 'customer', name: `Customer: John ${query}`, url: '#'},
+                    {type: 'order', name: `Order #${query}123`, url: '#'}
+                ];
+
+                searchResults.innerHTML = '';
+                mockResults.forEach(result => {
+                    const item = document.createElement('div');
+                    item.className = 'search-result-item';
+                    item.innerHTML = `<i class="fas fa-${this.getIconForType(result.type)}"></i> ${result.name}`;
+                    item.addEventListener('click', () => {
+                        window.location.href = result.url;
+                    });
+                    searchResults.appendChild(item);
+                });
+
+                searchResults.style.display = 'block';
+            }
+
+            getIconForType(type) {
+                const icons = {
+                    product: 'box',
+                    customer: 'user',
+                    order: 'receipt'
+                };
+                return icons[type] || 'search';
+            }
+
+            // Navigation highlighting
+            highlightActiveNav() {
+                const currentPath = window.location.pathname;
+                const navLinks = document.querySelectorAll('.nav-item');
+                
+                navLinks.forEach(link => {
+                    if (link.href) {
+                        const linkPath = new URL(link.href).pathname;
+                        if (currentPath.startsWith(linkPath) && linkPath !== '/') {
+                            link.classList.add('active');
+                        }
+                    }
+                });
+            }
+
+            // Toast notifications
+            showToast(type, title, message, duration = 4000) {
+                const toastContainer = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                
+                toast.innerHTML = `
+                    <div class="toast-header">
+                        <div class="toast-title">${title}</div>
+                        <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                    </div>
+                    <div class="toast-message">${message}</div>
+                `;
+                
+                toastContainer.appendChild(toast);
+                
+                // Show toast
+                setTimeout(() => toast.classList.add('show'), 100);
+                
+                // Auto remove
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+
+            // Loading states
+            showLoading() {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+            }
+
+            hideLoading() {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+
+            // Enhanced keyboard shortcuts and navigation
+            setupKeyboardShortcuts() {
+                let currentSearchIndex = -1;
+                
+                // Mobile touch and swipe gesture support
+                this.setupMobileGestures();
+                
+                document.addEventListener('keydown', (e) => {
+                    // Global shortcuts
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key) {
+                            case 'd':
+                                e.preventDefault();
+                                this.toggleTheme();
+                                break;
+                            case 'k':
+                                e.preventDefault();
+                                const searchInput = document.getElementById('globalSearch');
+                                searchInput.focus();
+                                searchInput.select();
+                                break;
+                            case 'b':
+                                e.preventDefault();
+                                this.toggleSidebar();
+                                break;
+                            case '/':
+                                e.preventDefault();
+                                document.getElementById('globalSearch').focus();
+                                break;
+                        }
+                    }
+
+                    // Search navigation
+                    const searchResults = document.getElementById('searchResults');
+                    const searchItems = searchResults.querySelectorAll('.search-result-item');
+                    
+                    if (searchItems.length > 0 && searchResults.style.display !== 'none') {
+                        switch(e.key) {
+                            case 'ArrowDown':
+                                e.preventDefault();
+                                currentSearchIndex = (currentSearchIndex + 1) % searchItems.length;
+                                this.highlightSearchResult(searchItems, currentSearchIndex);
+                                break;
+                            case 'ArrowUp':
+                                e.preventDefault();
+                                currentSearchIndex = currentSearchIndex <= 0 ? searchItems.length - 1 : currentSearchIndex - 1;
+                                this.highlightSearchResult(searchItems, currentSearchIndex);
+                                break;
+                            case 'Enter':
+                                if (currentSearchIndex >= 0 && searchItems[currentSearchIndex]) {
+                                    e.preventDefault();
+                                    searchItems[currentSearchIndex].click();
+                                }
+                                break;
+                        }
+                    }
+
+                    // General keyboard navigation
+                    switch(e.key) {
+                        case '?':
+                            this.showKeyboardShortcuts();
+                            break;
+                        case 'Escape':
+                            searchResults.style.display = 'none';
+                            searchResults.setAttribute('aria-expanded', 'false');
+                            currentSearchIndex = -1;
+                            // Close any open modals or dropdowns
+                            document.querySelectorAll('.dropdown-menu.show').forEach(el => {
+                                el.classList.remove('show');
+                            });
+                            break;
+                        case 'Tab':
+                            // Ensure proper focus order
+                            this.handleTabNavigation(e);
+                            break;
+                    }
+                });
+                
+                // Reset search index when search input loses focus
+                document.getElementById('globalSearch').addEventListener('blur', () => {
+                    setTimeout(() => {
+                        currentSearchIndex = -1;
+                        this.clearSearchHighlight();
+                    }, 100);
+                });
+            }
+            
+            highlightSearchResult(items, index) {
+                // Clear previous highlights
+                items.forEach(item => item.classList.remove('search-highlighted'));
+                
+                // Highlight current item
+                if (items[index]) {
+                    items[index].classList.add('search-highlighted');
+                    items[index].scrollIntoView({ block: 'nearest' });
+                    
+                    // Update ARIA attributes
+                    const searchInput = document.getElementById('globalSearch');
+                    searchInput.setAttribute('aria-activedescendant', items[index].id || `search-item-${index}`);
+                }
+            }
+            
+            clearSearchHighlight() {
+                document.querySelectorAll('.search-result-item').forEach(item => {
+                    item.classList.remove('search-highlighted');
+                });
+                document.getElementById('globalSearch').removeAttribute('aria-activedescendant');
+            }
+            
+            handleTabNavigation(e) {
+                // Ensure proper focus management for screen readers
+                const focusableElements = document.querySelectorAll(
+                    'a, button, input, textarea, select, details, [tabindex]:not([tabindex="-1"])'
+                );
+                
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+                
+                if (e.shiftKey && document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                } else if (!e.shiftKey && document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+
+            showKeyboardHelper() {
+                setTimeout(() => {
+                    const helper = document.getElementById('shortcutHelper');
+                    helper.classList.add('show');
+                    setTimeout(() => helper.classList.remove('show'), 3000);
+                }, 2000);
+            }
+
+            showKeyboardShortcuts() {
+                this.showToast('info', 'Keyboard Shortcuts', 
+                    'Ctrl+D: Toggle theme • Ctrl+K: Search • Ctrl+B: Toggle sidebar • ?: Show shortcuts', 
+                    8000);
+            }
+
+            // Welcome message
+            showWelcomeMessage() {
+                setTimeout(() => {
+                    this.showToast('success', 'Welcome to Grocify!', 
+                        'Your grocery management system is ready to use.');
+                }, 1000);
+            }
+
+            // Mobile gesture support
+            setupMobileGestures() {
+                let touchStartX = 0;
+                let touchStartY = 0;
+                let touchEndX = 0;
+                let touchEndY = 0;
+                
+                const swipeThreshold = 50; // Minimum distance for swipe
+                const velocityThreshold = 0.3; // Minimum velocity for swipe
+                
+                // Only enable on mobile devices
+                if (window.innerWidth <= 992) {
+                    document.addEventListener('touchstart', (e) => {
+                        touchStartX = e.changedTouches[0].screenX;
+                        touchStartY = e.changedTouches[0].screenY;
+                    }, { passive: true });
+                    
+                    document.addEventListener('touchend', (e) => {
+                        touchEndX = e.changedTouches[0].screenX;
+                        touchEndY = e.changedTouches[0].screenY;
+                        this.handleSwipeGesture(touchStartX, touchStartY, touchEndX, touchEndY);
+                    }, { passive: true });
+                }
+                
+                // Handle window resize for responsive sidebar behavior
+                window.addEventListener('resize', () => {
+                    this.handleWindowResize();
+                });
+                
+                // Prevent zoom on double tap for mobile forms
+                let lastTouchEnd = 0;
+                document.addEventListener('touchend', (e) => {
+                    const now = (new Date()).getTime();
+                    if (now - lastTouchEnd <= 300) {
+                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                            // Allow double tap on form inputs
+                            return;
+                        }
+                        e.preventDefault();
+                    }
+                    lastTouchEnd = now;
+                }, { passive: false });
+            }
+            
+            handleSwipeGesture(startX, startY, endX, endY) {
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                // Check if swipe is horizontal and meets threshold
+                if (Math.abs(deltaX) > Math.abs(deltaY) && distance > 50) {
+                    const sidebar = document.getElementById('sidebar');
+                    const isOpen = sidebar.classList.contains('show');
+                    
+                    // Right swipe (open sidebar)
+                    if (deltaX > 0 && !isOpen && startX < 50) {
+                        this.toggleSidebar();
+                    }
+                    // Left swipe (close sidebar)
+                    else if (deltaX < 0 && isOpen) {
+                        this.closeMobileSidebar();
+                    }
+                }
+            }
+            
+            handleWindowResize() {
+                const sidebar = document.getElementById('sidebar');
+                const body = document.body;
+                const overlay = document.querySelector('.sidebar-overlay');
+                
+                // If window is resized to desktop, cleanup mobile sidebar state
+                if (window.innerWidth > 992) {
+                    sidebar.classList.remove('show');
+                    body.classList.remove('sidebar-open');
+                    body.style.overflow = '';
+                    if (overlay) overlay.classList.remove('show');
+                    
+                    // Restore desktop sidebar state
+                    this.restoreSidebarState();
+                }
+                // If resized to mobile, ensure mobile-friendly state
+                else {
+                    sidebar.classList.remove('collapsed');
+                    const mainContent = document.getElementById('mainContent');
+                    if (mainContent) mainContent.classList.remove('sidebar-collapsed');
+                }
+            }
+
+            // Event listeners
+            setupEventListeners() {
+                // Sidebar toggle
+                document.getElementById('sidebarToggle').addEventListener('click', () => {
+                    this.toggleSidebar();
+                });
+
+                // Theme toggle
+                document.getElementById('themeToggle').addEventListener('click', () => {
+                    this.toggleTheme();
+                });
+
+                // Store selector
+                document.getElementById('storeSelector').addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        this.changeStore(e.target.value);
+                    }
+                });
+
+                // Notifications
+                document.getElementById('notificationsBtn').addEventListener('click', () => {
+                    this.showToast('info', 'Notifications', 
+                        'You have 3 new notifications: Low stock alert, New customer registration, Payment received');
+                });
+
+                // Mobile responsive
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth <= 768) {
+                        document.getElementById('sidebar').classList.remove('collapsed');
+                    }
+                });
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            new GrocifyUX();
         });
-      }
-    })();
-  </script>
+    </script>
 
-  {% block extra_js %}{% endblock %}
-  <footer class="footer text-center py-3">
-    {% block footer %}© {{ now.year }} Grocify{% endblock %}
-  </footer>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

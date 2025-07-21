@@ -53,6 +53,14 @@ class SaleTransaction(models.Model):
             )
             self.points_earned = earned
             super().save(update_fields=['points_earned'])
+    class Meta:
+        indexes = [
+            models.Index(fields=['date', 'location']),
+            models.Index(fields=['cashier', 'date']),
+            models.Index(fields=['customer', 'date']),
+            models.Index(fields=['invoice_number']),
+        ]
+
     def __str__(self):
         return f"Invoice #{self.invoice_number} – {self.total_amount} PKR"
     @property
